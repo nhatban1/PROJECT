@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registration</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <h2>Đăng ký môn học</h2>
+  <a href="/pages/dashboard.html">Trang chủ</a>
+  <form id="registrationForm">
+    <input id="courseId" placeholder="Course ID" required />
+    <input id="semesterId" placeholder="Semester ID" required />
+    <button type="submit">Đăng ký</button>
+  </form>
+
+  <h3>Danh sách đăng ký của tôi</h3>
+  <table>
+    <thead><tr><th>Môn</th><th>HK</th><th>Trạng thái</th></tr></thead>
+    <tbody id="registrationBody"></tbody>
+  </table>
+
+  <script src="/js/config/api.js"></script>
+  <script src="/js/utils/auth.js"></script>
+  <script src="/js/pages/registration.js"></script>
+</body>
+</html>

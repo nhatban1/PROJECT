@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Giảng viên</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <h2>Quản lý giảng viên</h2>
+    <a href="/pages/dashboard.html">Trang chủ</a>
+    <form id="teacherForm">
+      <input id="teacherId" placeholder="Mã giảng viên" required />
+      <input id="fullName" placeholder="Tên giảng viên" required />
+      <input id="department" placeholder="Khoa" required />
+      <button type="submit">Thêm giảng viên</button>
+    </form>
+    <table>
+      <thead>
+        <tr><th>Mã</th><th>Tên</th><th>Khoa</th><th>Hành động</th></tr>
+      </thead>
+      <tbody id="teacherBody"></tbody>
+    </table>
+
+    <script src="/js/config/api.js"></script>
+    <script src="/js/utils/auth.js"></script>
+    <script src="/js/pages/teachers.js"></script>
+  </body>
+</html>

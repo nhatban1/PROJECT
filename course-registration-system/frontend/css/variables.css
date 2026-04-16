@@ -1,0 +1,23 @@
+:root {
+	/* Văn Lang University palette: maroon & gold */
+	--bg: #f6f2ef;
+	--card: #ffffff;
+	--text: #2b2727;
+	--muted: #6b6565;
+	--primary: #7b1626; /* maroon */
+	--accent: #cba135;  /* gold */
+	--border: #e8e3df;
+	--success: #1f8a58;
+	--danger: #c72b2b;
+	--shadow: 0 6px 18px rgba(43,39,39,0.08);
+}
+
+.dark {
+	--bg: #0f1112;
+	--card: #141414;
+	--text: #f3f1ef;
+	--muted: #9a9696;
+	--primary: #7b1626;
+	--accent: #cba135;
+	--border: #262425;
+}

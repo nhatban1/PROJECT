@@ -1,0 +1,7 @@
+/* dark-theme fallbacks (variables.css handles most) */
+html.dark, body.dark {
+	background: var(--bg);
+	color: var(--text);
+}
+
+table { background: var(--card); color: var(--text); }

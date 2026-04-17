@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema(
     phone: String,
     department: String,
     academicYear: String,
-    role: { type: String, enum: ['student','admin','teacher'], default: 'student' }
+    role: { type: String, enum: ['student','admin','teacher'], default: 'student' },
+    isActive: { type: Boolean, default: true }
   },
   { timestamps: true }
 );

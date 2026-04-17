@@ -38,7 +38,7 @@ exports.cancelRegistration = async (req, res, next) => {
 exports.getMyRegistrations = async (req, res, next) => {
   try {
     const studentId = req.user._id;
-    const regs = await Registration.find({ studentId }).populate('courseId').populate('semesterId');
+    const regs = await Registration.find({ studentId }).populate('studentId', 'userId fullName email role').populate('courseId').populate('semesterId');
     res.json({ success: true, data: regs });
   } catch (err) { next(err); }
 };
@@ -47,7 +47,7 @@ exports.getRegistrations = async (req, res, next) => {
   try {
     const { page = 1, limit = 50 } = req.query;
     const skip = (page - 1) * limit;
-    const regs = await Registration.find().populate('courseId').populate('semesterId').skip(skip).limit(Number(limit));
+    const regs = await Registration.find().populate('studentId', 'userId fullName email role').populate('courseId').populate('semesterId').skip(skip).limit(Number(limit));
     const total = await Registration.countDocuments();
     res.json({ success: true, data: regs, total, page: Number(page), limit: Number(limit) });
   } catch (err) { next(err); }

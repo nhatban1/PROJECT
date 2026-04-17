@@ -21,5 +21,17 @@ exports.login = async (req, res, next) => {
 };
 
 exports.me = async (req, res, next) => {
-  res.json({ success: true, data: req.user });
+  res.json({
+    success: true,
+    data: {
+      id: req.user._id,
+      email: req.user.email,
+      fullName: req.user.fullName,
+      role: req.user.role,
+      userId: req.user.userId,
+      phone: req.user.phone,
+      department: req.user.department,
+      academicYear: req.user.academicYear,
+    },
+  });
 };

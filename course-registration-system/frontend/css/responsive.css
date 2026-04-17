@@ -1,6 +1,0 @@
-@media (max-width: 800px) {
-	body { padding: 12px; }
-	form { grid-template-columns: 1fr; }
-	table { font-size: 14px; }
-	.sidebar-menu { display:none; }
-}

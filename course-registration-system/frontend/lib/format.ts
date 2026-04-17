@@ -44,12 +44,12 @@ export function formatNumber(value?: number | null) {
 
 export function getInitials(value?: string | null) {
   if (!value) {
-    return "ED";
+    return "IU";
   }
 
   const parts = value.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) {
-    return "ED";
+    return "IU";
   }
 
   if (parts.length === 1) {
@@ -87,6 +87,26 @@ export function formatStatusLabel(value?: string | null) {
     return "-";
   }
 
-  const formatted = value.replace(/_/g, " ");
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  const normalized = value.trim().toLowerCase();
+  const translations: Record<string, string> = {
+    open: "Đang mở",
+    full: "Đã đầy",
+    closed: "Đã đóng",
+    available: "Còn chỗ",
+    filled: "Đã đầy",
+    registered: "Đã đăng ký",
+    cancelled: "Đã hủy",
+    pending: "Đang chờ",
+    approved: "Đã duyệt",
+    rejected: "Từ chối",
+    active: "Đang hoạt động",
+    inactive: "Không hoạt động",
+    draft: "Bản nháp",
+    completed: "Hoàn thành",
+    student: "Sinh viên",
+    teacher: "Giảng viên",
+    admin: "Quản trị viên",
+  };
+
+  return translations[normalized] ?? translations[normalized.replace(/_/g, " ")] ?? value.replace(/_/g, " ");
 }

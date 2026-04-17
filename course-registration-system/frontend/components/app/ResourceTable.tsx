@@ -21,18 +21,20 @@ interface ResourceTableProps<T> {
 }
 
 export function ResourceTable<T>({ columns, rows, rowKey, emptyMessage, loading = false, error }: ResourceTableProps<T>) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+
   if (loading) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <div className="h-4 w-40 rounded bg-slate-100" />
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-5 py-4">
+          <div className="h-4 w-40 rounded bg-muted" />
         </div>
         <div className="space-y-3 p-5">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
-              <div className="h-10 flex-1 rounded-lg bg-slate-100" />
-              <div className="h-10 flex-1 rounded-lg bg-slate-100" />
-              <div className="h-10 w-24 rounded-lg bg-slate-100" />
+            <div key={index} className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4">
+              <div className="h-10 flex-1 rounded-lg bg-muted" />
+              <div className="h-10 flex-1 rounded-lg bg-muted" />
+              <div className="h-10 w-24 rounded-lg bg-muted" />
             </div>
           ))}
         </div>
@@ -42,17 +44,17 @@ export function ResourceTable<T>({ columns, rows, rowKey, emptyMessage, loading 
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+      <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-5 py-4 text-sm text-destructive">
         {error}
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <table className="min-w-full divide-y divide-border text-left text-sm">
+          <thead className="bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <tr>
               {columns.map((column) => (
                 <th key={column.header} className={cn("px-5 py-3", column.headerClassName)}>
@@ -61,10 +63,10 @@ export function ResourceTable<T>({ columns, rows, rowKey, emptyMessage, loading 
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <tr key={rowKey(row)} className="transition-colors hover:bg-slate-50/80">
+          <tbody className="divide-y divide-border bg-card text-foreground">
+            {safeRows.length > 0 ? (
+              safeRows.map((row) => (
+                <tr key={rowKey(row)} className="transition-colors hover:bg-muted/60">
                   {columns.map((column) => (
                     <td key={column.header} className={cn("px-5 py-4 align-top", column.className)}>
                       {column.render(row)}
@@ -74,7 +76,7 @@ export function ResourceTable<T>({ columns, rows, rowKey, emptyMessage, loading 
               ))
             ) : (
               <tr>
-                <td className="px-5 py-12 text-center text-slate-500" colSpan={columns.length}>
+                <td className="px-5 py-12 text-center text-muted-foreground" colSpan={columns.length}>
                   {emptyMessage}
                 </td>
               </tr>

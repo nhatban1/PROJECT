@@ -7,6 +7,7 @@ import { GraduationCap, Building2 } from "lucide-react";
 import { ResourceTable } from "@/components/app/ResourceTable";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
+import { ensureArray } from "@/lib/utils";
 import type { TeacherRecord } from "@/lib/types";
 
 export default function TeachersPage() {
@@ -28,7 +29,7 @@ export default function TeachersPage() {
           return;
         }
 
-        setTeachers(response.data ?? []);
+        setTeachers(ensureArray<TeacherRecord>(response.data));
       } catch (fetchError) {
         if (cancelled) {
           return;
@@ -40,7 +41,7 @@ export default function TeachersPage() {
           return;
         }
 
-        setError(fetchError instanceof Error ? fetchError.message : "Failed to load teachers");
+        setError(fetchError instanceof Error ? fetchError.message : "Không tải được danh sách giảng viên");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -59,26 +60,26 @@ export default function TeachersPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Faculty</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Teachers</h1>
-            <p className="mt-2 text-sm text-slate-500">View teaching staff records loaded from the backend teachers API.</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Đội ngũ</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Giảng viên</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Xem hồ sơ giảng viên từ API phía sau.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-slate-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Teachers</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(teachers.length)}</p>
+            <div className="rounded-2xl bg-muted/50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Tổng số</p>
+              <p className="mt-1 text-xl font-semibold text-foreground">{formatNumber(teachers.length)}</p>
             </div>
-            <div className="rounded-2xl bg-indigo-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-indigo-700">Departments</p>
-              <p className="mt-1 text-xl font-semibold text-indigo-800">{formatNumber(departments.size)}</p>
+            <div className="rounded-2xl bg-primary/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-primary">Khoa phụ trách</p>
+              <p className="mt-1 text-xl font-semibold text-primary">{formatNumber(departments.size)}</p>
             </div>
-            <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-emerald-700">Coverage</p>
-              <p className="mt-1 text-xl font-semibold text-emerald-800">Live</p>
+            <div className="rounded-2xl bg-emerald-500/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Cập nhật</p>
+              <p className="mt-1 text-xl font-semibold text-emerald-800 dark:text-emerald-200">Trực tiếp</p>
             </div>
           </div>
         </div>
@@ -89,26 +90,26 @@ export default function TeachersPage() {
         error={error}
         rows={teachers}
         rowKey={(teacher) => teacher._id}
-        emptyMessage="No teachers found."
+        emptyMessage="Không tìm thấy giảng viên nào."
         columns={[
           {
-            header: "Teacher ID",
+            header: "Mã GV",
             render: (teacher) => (
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-semibold text-foreground">
                 <GraduationCap className="mr-1 h-3.5 w-3.5" />
                 {teacher.teacherId}
               </span>
             ),
           },
           {
-            header: "Name",
-            render: (teacher) => <p className="font-medium text-slate-900">{teacher.fullName}</p>,
+            header: "Họ tên",
+            render: (teacher) => <p className="font-medium text-foreground">{teacher.fullName}</p>,
           },
           {
-            header: "Department",
+            header: "Khoa",
             render: (teacher) => (
-              <div className="inline-flex items-center gap-2 text-slate-700">
-                <Building2 className="h-4 w-4 text-slate-400" />
+              <div className="inline-flex items-center gap-2 text-foreground">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
                 <span>{teacher.department || "-"}</span>
               </div>
             ),

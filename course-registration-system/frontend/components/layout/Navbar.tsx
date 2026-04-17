@@ -5,38 +5,50 @@ import { Bell } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/layout/AuthProvider";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { getInitials } from "@/lib/format";
+
+const routeTitles: Record<string, string> = {
+  dashboard: "Bảng điều khiển",
+  students: "Sinh viên",
+  teachers: "Giảng viên",
+  courses: "Khóa học",
+  registration: "Đăng ký học phần",
+  search: "Tìm kiếm",
+  reports: "Báo cáo",
+};
 
 export function Navbar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  
-  // Basic Breadcrumb mapping
+
   const segments = pathname.split("/").filter(Boolean);
-  const title = segments[segments.length - 1] || "Dashboard";
-  const formattedTitle = title.charAt(0).toUpperCase() + title.slice(1);
-  const displayName = user?.fullName ?? user?.email ?? "Admin User";
-  const displayEmail = user?.email ?? "admin@eduhub.com";
+  const activeSection = segments[0] || "dashboard";
+  const formattedTitle = routeTitles[activeSection] ?? "Bảng điều khiển";
+  const displayName = user?.fullName ?? user?.email ?? "Quản trị viên";
+  const displayEmail = user?.email ?? "admin@iuh-eduhub.vn";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-6">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-slate-800">{formattedTitle}</h1>
+        <h1 className="text-xl font-semibold text-foreground">{formattedTitle}</h1>
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative text-slate-500 hover:text-slate-900">
+        <ThemeToggle />
+
+        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground" aria-label="Thông báo" title="Thông báo">
           <Bell className="h-5 w-5" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-background"></span>
         </Button>
 
-        <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
-          <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
+        <div className="flex items-center gap-3 border-l border-border pl-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
             {getInitials(displayName)}
           </div>
           <div className="text-sm">
-            <p className="font-semibold text-slate-800">{displayName}</p>
-            <p className="text-xs text-slate-500">{displayEmail}</p>
+            <p className="font-semibold text-foreground">{displayName}</p>
+            <p className="text-xs text-muted-foreground">{displayEmail}</p>
           </div>
         </div>
       </div>

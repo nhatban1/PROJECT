@@ -71,7 +71,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   const payload = await parseResponse<T>(response);
 
   if (!response.ok) {
-    throw new ApiError(payload?.message ?? `Request failed with status ${response.status}`, response.status, payload);
+    throw new ApiError(payload?.message ?? `Yêu cầu thất bại với mã trạng thái ${response.status}`, response.status, payload);
   }
 
   return payload ?? { success: true };

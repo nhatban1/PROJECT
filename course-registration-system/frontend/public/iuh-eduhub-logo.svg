@@ -1,0 +1,47 @@
+<svg width="500" height="650" viewBox="0 0 500 650" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .brand-blue { fill: #1D4696; }
+      .brand-gold { fill: #F6B319; }
+      .white { fill: #FFFFFF; }
+      .text-main { font-family: 'Segoe UI', Arial, sans-serif; font-weight: 900; font-size: 52px; }
+    </style>
+  </defs>
+
+  <path class="brand-blue" d="M60,240 V450 C60,510 110,545 170,545 H330 C390,545 440,510 440,450 V240 H330 V450 C330,455 325,465 315,465 H185 C175,465 170,455 170,450 V240 H60Z" />
+
+  <g transform="translate(50, 40)">
+    <path class="brand-gold" d="M0,55 L95,15 L190,55 L95,95 Z" />
+    <path class="brand-gold" d="M45,70 V105 C45,105 95,130 145,105 V70" opacity="0.9"/>
+    <path class="brand-gold" d="M15,60 C15,60 10,95 25,115" stroke="#F6B319" stroke-width="6" fill="none" />
+  </g>
+
+  <g transform="translate(320, 40)">
+    <path class="brand-blue" d="M10,45 L60,15 L110,45 V65 H10 Z" />
+    <rect class="brand-blue" x="25" y="70" width="70" height="90" />
+    <path d="M50,95 A10,10 0 0 1 70,95 V120 H50 Z" fill="white" />
+    <path class="brand-blue" d="M0,165 L60,135 L120,165 V215 H0 Z" />
+  </g>
+
+  <g transform="translate(200, 260)">
+    <rect class="brand-gold" x="0" y="10" width="105" height="135" rx="10" />
+    <rect class="white" x="8" y="25" width="89" height="100" rx="2" />
+    <path class="brand-blue" d="M30,10 V0 H75 V10 Z" />
+    <circle class="white" cx="52" cy="5" r="3" />
+    <line x1="22" y1="45" x2="83" y2="45" stroke="#1D4696" stroke-width="4" />
+    <line x1="22" y1="70" x2="83" y2="70" stroke="#1D4696" stroke-width="4" />
+    <line x1="22" y1="95" x2="65" y2="95" stroke="#1D4696" stroke-width="4" />
+    <g transform="rotate(-15, 85, 110)">
+        <rect class="brand-gold" x="80" y="55" width="14" height="65" rx="2" />
+        <path class="brand-blue" d="M80,120 L87,140 L94,120 Z" />
+    </g>
+  </g>
+
+  <circle class="brand-gold" cx="405" cy="460" r="42" stroke="white" stroke-width="4" />
+  <path d="M385,460 L397,472 L425,445" fill="none" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+
+  <text x="250" y="625" text-anchor="middle" class="text-main">
+    <tspan fill="#1D4696">IUH-</tspan>
+    <tspan fill="#F6B319">EduHub</tspan>
+  </text>
+</svg>

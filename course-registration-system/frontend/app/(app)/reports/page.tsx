@@ -6,20 +6,20 @@ import { BarChart3, BookOpenCheck, ShieldCheck } from "lucide-react";
 
 import { ResourceTable } from "@/components/app/ResourceTable";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, ensureArray } from "@/lib/utils";
 import { formatNumber, formatStatusLabel } from "@/lib/format";
 import type { CourseRecord, DashboardStats, RegistrationRecord } from "@/lib/types";
 
 function courseStatusClass(status: CourseRecord["status"]) {
   if (status === "full") {
-    return "bg-rose-50 text-rose-700 border-rose-200";
+    return "bg-destructive/10 text-destructive border-destructive/20";
   }
 
   if (status === "closed") {
-    return "bg-slate-100 text-slate-600 border-slate-200";
+    return "bg-muted text-muted-foreground border-border";
   }
 
-  return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  return "bg-emerald-500/10 text-emerald-700 border-emerald-200/60 dark:text-emerald-300 dark:border-emerald-500/20";
 }
 
 function resolveCourseTitle(value: RegistrationRecord["courseId"] | CourseRecord) {
@@ -65,8 +65,8 @@ export default function ReportsPage() {
         }
 
         setStats(statsResponse.data ?? null);
-        setCourses(courseResponse.data ?? []);
-        setRegistrations(registrationResponse.data ?? []);
+        setCourses(ensureArray<CourseRecord>(courseResponse.data));
+        setRegistrations(ensureArray<RegistrationRecord>(registrationResponse.data));
       } catch (fetchError) {
         if (cancelled) {
           return;
@@ -78,7 +78,7 @@ export default function ReportsPage() {
           return;
         }
 
-        setError(fetchError instanceof Error ? fetchError.message : "Failed to load reports");
+        setError(fetchError instanceof Error ? fetchError.message : "Không tải được báo cáo");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -109,69 +109,69 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Analytics</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Reports</h1>
-            <p className="mt-2 text-sm text-slate-500">Operational summary built from the dashboard, course, and registration APIs.</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Phân tích</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Báo cáo</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Báo cáo tổng hợp từ API tổng quan, khóa học và đăng ký.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div className="rounded-2xl bg-slate-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Students</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(stats?.studentCount ?? 0)}</p>
+            <div className="rounded-2xl bg-muted/50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Sinh viên</p>
+              <p className="mt-1 text-xl font-semibold text-foreground">{formatNumber(stats?.studentCount ?? 0)}</p>
             </div>
-            <div className="rounded-2xl bg-indigo-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-indigo-700">Teachers</p>
-              <p className="mt-1 text-xl font-semibold text-indigo-800">{formatNumber(stats?.teacherCount ?? 0)}</p>
+            <div className="rounded-2xl bg-primary/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-primary">Giảng viên</p>
+              <p className="mt-1 text-xl font-semibold text-primary">{formatNumber(stats?.teacherCount ?? 0)}</p>
             </div>
-            <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-emerald-700">Courses</p>
-              <p className="mt-1 text-xl font-semibold text-emerald-800">{formatNumber(stats?.courseCount ?? 0)}</p>
+            <div className="rounded-2xl bg-emerald-500/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Khóa học</p>
+              <p className="mt-1 text-xl font-semibold text-emerald-800 dark:text-emerald-200">{formatNumber(stats?.courseCount ?? 0)}</p>
             </div>
-            <div className="rounded-2xl bg-amber-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-amber-700">Registrations</p>
-              <p className="mt-1 text-xl font-semibold text-amber-800">{formatNumber(stats?.registrationCount ?? 0)}</p>
+            <div className="rounded-2xl bg-amber-500/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Đăng ký</p>
+              <p className="mt-1 text-xl font-semibold text-amber-800 dark:text-amber-200">{formatNumber(stats?.registrationCount ?? 0)}</p>
             </div>
           </div>
         </div>
       </section>
 
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{error}</div> : null}
+      {error ? <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-5 py-4 text-sm text-destructive">{error}</div> : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-slate-500">Open courses</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">{formatNumber(statusBreakdown.open)}</p>
+              <p className="text-sm font-medium text-muted-foreground">Khóa đang mở</p>
+              <p className="mt-2 text-3xl font-semibold text-foreground">{formatNumber(statusBreakdown.open)}</p>
             </div>
-            <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700">
+            <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-300">
               <BookOpenCheck className="h-5 w-5" />
             </div>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-slate-500">Full courses</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">{formatNumber(statusBreakdown.full)}</p>
+              <p className="text-sm font-medium text-muted-foreground">Khóa đã đầy</p>
+              <p className="mt-2 text-3xl font-semibold text-foreground">{formatNumber(statusBreakdown.full)}</p>
             </div>
-            <div className="rounded-2xl bg-rose-50 p-3 text-rose-700">
+            <div className="rounded-2xl bg-destructive/10 p-3 text-destructive">
               <ShieldCheck className="h-5 w-5" />
             </div>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:col-span-2 xl:col-span-1">
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-sm md:col-span-2 xl:col-span-1">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-slate-500">Closed courses</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">{formatNumber(statusBreakdown.closed)}</p>
+              <p className="text-sm font-medium text-muted-foreground">Khóa đã đóng</p>
+              <p className="mt-2 text-3xl font-semibold text-foreground">{formatNumber(statusBreakdown.closed)}</p>
             </div>
-            <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+            <div className="rounded-2xl bg-muted p-3 text-foreground">
               <BarChart3 className="h-5 w-5" />
             </div>
           </div>
@@ -180,20 +180,20 @@ export default function ReportsPage() {
 
       <section className="grid gap-6 xl:grid-cols-2">
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">Busiest courses</h2>
+          <h2 className="text-lg font-semibold text-foreground">Khóa học đông nhất</h2>
           <ResourceTable
             loading={loading}
             rows={busiestCourses}
             rowKey={(course) => course._id}
-            emptyMessage="No course data available."
+            emptyMessage="Không có dữ liệu khóa học."
             columns={[
-              { header: "Course", render: (course) => course.name },
+              { header: "Khóa học", render: (course) => course.name },
               {
-                header: "Usage",
+                header: "Mức sử dụng",
                 render: (course) => `${course.currentStudents}/${course.maxStudents}`,
               },
               {
-                header: "Status",
+                header: "Trạng thái",
                 render: (course) => <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(course.status))}>{formatStatusLabel(course.status)}</span>,
               },
             ]}
@@ -201,16 +201,16 @@ export default function ReportsPage() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">Recent registrations</h2>
+          <h2 className="text-lg font-semibold text-foreground">Đăng ký gần đây</h2>
           <ResourceTable
             loading={loading}
             rows={registrations.slice(0, 5)}
             rowKey={(registration) => registration._id}
-            emptyMessage="No registration data available."
+            emptyMessage="Không có dữ liệu đăng ký."
             columns={[
-              { header: "Student", render: (registration) => resolveStudentTitle(registration.studentId) },
-              { header: "Course", render: (registration) => resolveCourseTitle(registration.courseId) },
-              { header: "Status", render: (registration) => formatStatusLabel(registration.status) },
+              { header: "Sinh viên", render: (registration) => resolveStudentTitle(registration.studentId) },
+              { header: "Khóa học", render: (registration) => resolveCourseTitle(registration.courseId) },
+              { header: "Trạng thái", render: (registration) => formatStatusLabel(registration.status) },
             ]}
           />
         </div>

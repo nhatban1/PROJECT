@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Eye, EyeOff, GraduationCap, Lock, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { Button } from "@/components/ui/button";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api";
@@ -33,53 +34,58 @@ export default function LoginPage() {
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload?.message ?? "Dang nhap that bai");
+        throw new Error(payload?.message ?? "Đăng nhập thất bại");
       }
 
       const token = payload?.data?.token;
       if (!token) {
-        throw new Error("Khong tim thay token dang nhap");
+        throw new Error("Không tìm thấy token đăng nhập");
       }
 
       window.localStorage.setItem("token", token);
       router.push("/dashboard");
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Co loi xay ra khi dang nhap");
+      setError(submitError instanceof Error ? submitError.message : "Đã xảy ra lỗi khi đăng nhập");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_80px_rgba(15,23,42,0.12)]">
-      <div className="grid md:grid-cols-[1.1fr_0.9fr]">
-        <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.24),_transparent_38%),linear-gradient(135deg,_#0f172a_0%,_#1e293b_55%,_#334155_100%)] p-8 text-white sm:p-10 lg:p-12">
+    <>
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 left-0 h-[40rem] w-[40rem] -translate-y-1/4 -translate-x-1/4 rounded-full bg-[#93C5FD] opacity-40 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[40rem] w-[40rem] translate-y-1/4 translate-x-1/4 rounded-full bg-[#D8B4FE] opacity-40 blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-border bg-card shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
+        <div className="grid md:grid-cols-[1.1fr_0.9fr]">
+          <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.24),_transparent_38%),linear-gradient(135deg,_#0f172a_0%,_#1e293b_55%,_#334155_100%)] p-8 text-white sm:p-10 lg:p-12">
           <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.08),transparent_35%,rgba(255,255,255,0.05)_70%,transparent)]" />
           <div className="relative flex h-full flex-col justify-between gap-10">
-            <div className="inline-flex w-fit items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur">
-              <GraduationCap className="h-4 w-4" />
-              Course Registration System
+            <div className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur">
+              <BrandLogo size="md" tone="inverse" />
             </div>
 
             <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.28em] text-slate-300/90">Secure access</p>
+              <p className="text-sm uppercase tracking-[0.28em] text-slate-300/90">NỀN TẢNG HỌC THUẬT SỐ</p>
               <h1 className="max-w-md text-4xl font-semibold tracking-tight sm:text-5xl">
-                Manage semesters, courses, and registrations in one place.
+                IUH-EduHub: Hệ thống quản lý học kỳ, khóa học và đăng ký môn học chuyên nghiệp
               </h1>
               <p className="max-w-lg text-base leading-7 text-slate-200/90 sm:text-lg">
-                Sign in to continue to the academic dashboard and handle student workflows without switching tools.
+                Hãy đăng nhập ngay để tiếp tục quản lý học tập và trải nghiệm các tiện ích sinh viên tích hợp.
               </p>
             </div>
 
             <div className="grid gap-3 text-sm text-slate-200/90 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                Fast login
+                Giao diện thân thiện
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                Role-based access
+                Phân quyền theo vai trò
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                Dashboard ready
+                Dashboard trực quan
               </div>
             </div>
           </div>
@@ -87,17 +93,17 @@ export default function LoginPage() {
 
         <section className="p-8 sm:p-10 lg:p-12">
           <div className="mb-8 space-y-2">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Welcome back</h2>
-            <p className="text-sm text-slate-500">Enter your account to continue.</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground">Chào mừng trở lại</h2>
+            <p className="text-sm text-muted-foreground">Nhập tài khoản của bạn để tiếp tục.</p>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-slate-700">
+              <label htmlFor="email" className="text-sm font-medium text-foreground">
                 Email
               </label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   id="email"
                   name="email"
@@ -106,18 +112,18 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
-                  placeholder="admin@eduhub.com"
+                  className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
+                  placeholder="admin@iuh-eduhub.vn"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                Password
+              <label htmlFor="password" className="text-sm font-medium text-foreground">
+                Mật khẩu
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   id="password"
                   name="password"
@@ -126,14 +132,14 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-12 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
-                  placeholder="Enter your password"
+                  className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-12 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
+                  placeholder="Nhập mật khẩu của bạn"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -141,35 +147,36 @@ export default function LoginPage() {
             </div>
 
             {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 {error}
               </div>
             ) : null}
 
-            <div className="flex items-center justify-between text-sm text-slate-500">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
               <label className="inline-flex items-center gap-2">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
                 />
-                Remember me
+                Ghi nhớ tôi
               </label>
-              <button type="button" className="font-medium text-indigo-600 transition hover:text-indigo-700">
-                Forgot password?
+              <button type="button" className="font-medium text-primary transition hover:text-primary/80">
+                Quên mật khẩu?
               </button>
             </div>
 
             <Button type="submit" className="h-11 w-full rounded-xl text-sm font-semibold" disabled={loading}>
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
               {!loading ? <ArrowRight className="h-4 w-4" /> : null}
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Need an account? Contact your administrator.
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Bạn cần tài khoản? Hãy liên hệ quản trị viên.
           </p>
         </section>
       </div>
     </div>
+    </>
   );
 }

@@ -6,7 +6,7 @@ import { BookOpen, Clock3, Layers3 } from "lucide-react";
 
 import { ResourceTable } from "@/components/app/ResourceTable";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, ensureArray } from "@/lib/utils";
 import { formatNumber, formatScheduleText, formatStatusLabel } from "@/lib/format";
 import type { CourseRecord } from "@/lib/types";
 
@@ -40,14 +40,14 @@ function resolveLabel(value: CourseRecord["teacherId"] | CourseRecord["semesterI
 
 function statusClass(status: CourseRecord["status"]) {
   if (status === "full") {
-    return "bg-rose-50 text-rose-700 border-rose-200";
+    return "bg-destructive/10 text-destructive border-destructive/20";
   }
 
   if (status === "closed") {
-    return "bg-slate-100 text-slate-600 border-slate-200";
+    return "bg-muted text-muted-foreground border-border";
   }
 
-  return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  return "bg-emerald-500/10 text-emerald-700 border-emerald-200/60 dark:text-emerald-300 dark:border-emerald-500/20";
 }
 
 export default function CoursesPage() {
@@ -69,7 +69,7 @@ export default function CoursesPage() {
           return;
         }
 
-        setCourses(response.data ?? []);
+        setCourses(ensureArray<CourseRecord>(response.data));
       } catch (fetchError) {
         if (cancelled) {
           return;
@@ -81,7 +81,7 @@ export default function CoursesPage() {
           return;
         }
 
-        setError(fetchError instanceof Error ? fetchError.message : "Failed to load courses");
+        setError(fetchError instanceof Error ? fetchError.message : "Không tải được danh sách khóa học");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -107,30 +107,30 @@ export default function CoursesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Catalog</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Courses</h1>
-            <p className="mt-2 text-sm text-slate-500">Inspect course capacity, schedules, and current status from the backend.</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Danh mục</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Khóa học</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Kiểm tra sức chứa, lịch học và trạng thái hiện tại của khóa học từ hệ thống phía sau.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div className="rounded-2xl bg-slate-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Total</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(courses.length)}</p>
+            <div className="rounded-2xl bg-muted/50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Tổng số</p>
+              <p className="mt-1 text-xl font-semibold text-foreground">{formatNumber(courses.length)}</p>
             </div>
-            <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-emerald-700">Open</p>
-              <p className="mt-1 text-xl font-semibold text-emerald-800">{formatNumber(courseStats.open)}</p>
+            <div className="rounded-2xl bg-emerald-500/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Đang mở</p>
+              <p className="mt-1 text-xl font-semibold text-emerald-800 dark:text-emerald-200">{formatNumber(courseStats.open)}</p>
             </div>
-            <div className="rounded-2xl bg-rose-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-rose-700">Full</p>
-              <p className="mt-1 text-xl font-semibold text-rose-800">{formatNumber(courseStats.full)}</p>
+            <div className="rounded-2xl bg-destructive/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-destructive">Đã đầy</p>
+              <p className="mt-1 text-xl font-semibold text-destructive">{formatNumber(courseStats.full)}</p>
             </div>
-            <div className="rounded-2xl bg-indigo-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-indigo-700">Capacity</p>
-              <p className="mt-1 text-xl font-semibold text-indigo-800">{formatNumber(courseStats.totalCapacity)}</p>
+            <div className="rounded-2xl bg-primary/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-primary">Sức chứa</p>
+              <p className="mt-1 text-xl font-semibold text-primary">{formatNumber(courseStats.totalCapacity)}</p>
             </div>
           </div>
         </div>
@@ -141,64 +141,64 @@ export default function CoursesPage() {
         error={error}
         rows={courses}
         rowKey={(course) => course._id}
-        emptyMessage="No courses found."
+        emptyMessage="Không tìm thấy khóa học nào."
         columns={[
           {
-            header: "Course",
+            header: "Khóa học",
             render: (course) => (
               <div className="space-y-1">
-                <p className="font-medium text-slate-900">{course.name}</p>
-                <p className="text-xs text-slate-500">{course.courseId}</p>
+                <p className="font-medium text-foreground">{course.name}</p>
+                <p className="text-xs text-muted-foreground">{course.courseId}</p>
               </div>
             ),
           },
           {
-            header: "Teacher",
+            header: "Giảng viên",
             render: (course) => (
               <div className="space-y-1">
-                <p className="font-medium text-slate-900">{resolveLabel(course.teacherId)}</p>
-                <p className="text-xs text-slate-500">{typeof course.teacherId === "string" ? "-" : course.teacherId.teacherId || "-"}</p>
+                <p className="font-medium text-foreground">{resolveLabel(course.teacherId)}</p>
+                <p className="text-xs text-muted-foreground">{typeof course.teacherId === "string" ? "-" : course.teacherId.teacherId || "-"}</p>
               </div>
             ),
           },
           {
-            header: "Semester",
+            header: "Học kỳ",
             render: (course) => (
               <div className="space-y-1">
-                <p className="font-medium text-slate-900">{resolveLabel(course.semesterId)}</p>
-                <p className="text-xs text-slate-500">{typeof course.semesterId === "string" ? "-" : course.semesterId.semesterId || "-"}</p>
+                <p className="font-medium text-foreground">{resolveLabel(course.semesterId)}</p>
+                <p className="text-xs text-muted-foreground">{typeof course.semesterId === "string" ? "-" : course.semesterId.semesterId || "-"}</p>
               </div>
             ),
           },
           {
-            header: "Schedule",
+            header: "Lịch học",
             render: (course) => (
-              <div className="inline-flex items-center gap-2 text-slate-700">
-                <Clock3 className="h-4 w-4 text-slate-400" />
+              <div className="inline-flex items-center gap-2 text-foreground">
+                <Clock3 className="h-4 w-4 text-muted-foreground" />
                 <span>{formatScheduleText(course.schedule)}</span>
               </div>
             ),
           },
           {
-            header: "Credits",
+            header: "Tín chỉ",
             render: (course) => (
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-semibold text-foreground">
                 <BookOpen className="mr-1 h-3.5 w-3.5" />
                 {course.credits}
               </span>
             ),
           },
           {
-            header: "Capacity",
+            header: "Sĩ số",
             render: (course) => (
               <div className="space-y-1">
-                <p className="font-medium text-slate-900">{formatNumber(course.currentStudents)} / {formatNumber(course.maxStudents)}</p>
-                <p className="text-xs text-slate-500">{course.currentStudents >= course.maxStudents ? "Filled" : "Available"}</p>
+                <p className="font-medium text-foreground">{formatNumber(course.currentStudents)} / {formatNumber(course.maxStudents)}</p>
+                <p className="text-xs text-muted-foreground">{course.currentStudents >= course.maxStudents ? "Đã đầy" : "Còn chỗ"}</p>
               </div>
             ),
           },
           {
-            header: "Status",
+            header: "Trạng thái",
             render: (course) => (
               <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", statusClass(course.status))}>
                 <Layers3 className="mr-1 h-3.5 w-3.5" />

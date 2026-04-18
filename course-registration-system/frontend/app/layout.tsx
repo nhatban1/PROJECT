@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Course Registration API",
-  description: "Academic Dashboard and Course Registration",
+  title: {
+    default: "IUH-EduHub",
+    template: "%s | IUH-EduHub",
+  },
+  description: "Cổng quản lý đăng ký học phần và điều phối học vụ",
+  icons: {
+    icon: "/iuh-eduhub-logo.svg",
+    shortcut: "/iuh-eduhub-logo.svg",
+    apple: "/iuh-eduhub-logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -24,12 +33,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-        <Toaster richColors />
+    <html lang="vi" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background text-foreground antialiased`}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          {children}
+          <Toaster richColors />
+        </ThemeProvider>
       </body>
     </html>
   );

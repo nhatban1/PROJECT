@@ -7,6 +7,7 @@ import { Users, Mail, Phone } from "lucide-react";
 import { ResourceTable } from "@/components/app/ResourceTable";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
 import { formatNumber, formatStatusLabel } from "@/lib/format";
+import { ensureArray } from "@/lib/utils";
 import type { StudentRecord } from "@/lib/types";
 
 export default function StudentsPage() {
@@ -28,7 +29,7 @@ export default function StudentsPage() {
           return;
         }
 
-        const records = (response.data ?? []).filter((student) => (student.role ?? "student") === "student");
+        const records = ensureArray<StudentRecord>(response.data).filter((student) => (student.role ?? "student") === "student");
         setStudents(records);
       } catch (fetchError) {
         if (cancelled) {
@@ -41,7 +42,7 @@ export default function StudentsPage() {
           return;
         }
 
-        setError(fetchError instanceof Error ? fetchError.message : "Failed to load students");
+        setError(fetchError instanceof Error ? fetchError.message : "Không tải được danh sách sinh viên");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -58,30 +59,30 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Directory</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Students</h1>
-            <p className="mt-2 text-sm text-slate-500">Browse student accounts pulled from the backend users API.</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Danh bạ</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Sinh viên</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Duyệt tài khoản sinh viên từ API người dùng phía sau.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-2xl bg-slate-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Listed</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(students.length)}</p>
+            <div className="rounded-2xl bg-muted/50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Tổng số</p>
+              <p className="mt-1 text-xl font-semibold text-foreground">{formatNumber(students.length)}</p>
             </div>
-            <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-emerald-700">Visible</p>
-              <p className="mt-1 text-xl font-semibold text-emerald-800">{formatNumber(students.filter((student) => student.fullName).length)}</p>
+            <div className="rounded-2xl bg-emerald-500/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Đã có tên</p>
+              <p className="mt-1 text-xl font-semibold text-emerald-800 dark:text-emerald-200">{formatNumber(students.filter((student) => student.fullName).length)}</p>
             </div>
-            <div className="rounded-2xl bg-indigo-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-indigo-700">With email</p>
-              <p className="mt-1 text-xl font-semibold text-indigo-800">{formatNumber(students.filter((student) => student.email).length)}</p>
+            <div className="rounded-2xl bg-primary/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-primary">Có email</p>
+              <p className="mt-1 text-xl font-semibold text-primary">{formatNumber(students.filter((student) => student.email).length)}</p>
             </div>
-            <div className="rounded-2xl bg-amber-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-amber-700">Role</p>
-              <p className="mt-1 text-xl font-semibold text-amber-800">{formatStatusLabel("student")}</p>
+            <div className="rounded-2xl bg-amber-500/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Vai trò</p>
+              <p className="mt-1 text-xl font-semibold text-amber-800 dark:text-amber-200">{formatStatusLabel("student")}</p>
             </div>
           </div>
         </div>
@@ -92,49 +93,49 @@ export default function StudentsPage() {
         error={error}
         rows={students}
         rowKey={(student) => student._id}
-        emptyMessage="No student records found."
+        emptyMessage="Không tìm thấy sinh viên nào."
         columns={[
           {
-            header: "Student",
+            header: "Sinh viên",
             render: (student) => (
               <div className="space-y-1">
-                <p className="font-medium text-slate-900">{student.fullName || "Unnamed student"}</p>
-                <p className="text-xs text-slate-500">{student.userId || student._id}</p>
+                <p className="font-medium text-foreground">{student.fullName || "Sinh viên chưa có tên"}</p>
+                <p className="text-xs text-muted-foreground">{student.userId || student._id}</p>
               </div>
             ),
           },
           {
             header: "Email",
             render: (student) => (
-              <div className="inline-flex items-center gap-2 text-slate-700">
-                <Mail className="h-4 w-4 text-slate-400" />
+              <div className="inline-flex items-center gap-2 text-foreground">
+                <Mail className="h-4 w-4 text-muted-foreground" />
                 <span>{student.email}</span>
               </div>
             ),
           },
           {
-            header: "Phone",
+            header: "Số điện thoại",
             render: (student) => (
-              <div className="inline-flex items-center gap-2 text-slate-700">
-                <Phone className="h-4 w-4 text-slate-400" />
+              <div className="inline-flex items-center gap-2 text-foreground">
+                <Phone className="h-4 w-4 text-muted-foreground" />
                 <span>{student.phone || "-"}</span>
               </div>
             ),
           },
           {
-            header: "Department",
+            header: "Khoa",
             render: (student) => student.department || "-",
           },
           {
-            header: "Academic year",
+            header: "Niên khóa",
             render: (student) => student.academicYear || "-",
           },
           {
-            header: "Role",
+            header: "Vai trò",
             render: () => (
-              <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                 <Users className="mr-1 h-3.5 w-3.5" />
-                Student
+                Sinh viên
               </span>
             ),
           },

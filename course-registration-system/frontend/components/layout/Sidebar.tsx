@@ -34,7 +34,7 @@ export function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card text-foreground">
       <div className="flex h-16 items-center border-b border-border px-6">
-        <Link href="/dashboard" aria-label="IUHEduHub - Bảng điều khiển">
+        <Link href="/dashboard" aria-label="IUH-EduHub - Bảng điều khiển">
           <BrandLogo size="sm" />
         </Link>
       </div>

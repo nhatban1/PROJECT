@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "IUHEduHub",
-    template: "%s | IUHEduHub",
+    default: "IUH-EduHub",
+    template: "%s | IUH-EduHub",
   },
   description: "Cổng quản lý đăng ký học phần và điều phối học vụ",
   icons: {

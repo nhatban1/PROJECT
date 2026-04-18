@@ -52,9 +52,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-5xl overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_80px_rgba(15,23,42,0.12)]">
-      <div className="grid md:grid-cols-[1.1fr_0.9fr]">
-        <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.24),_transparent_38%),linear-gradient(135deg,_#0f172a_0%,_#1e293b_55%,_#334155_100%)] p-8 text-white sm:p-10 lg:p-12">
+    <>
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 left-0 h-[40rem] w-[40rem] -translate-y-1/4 -translate-x-1/4 rounded-full bg-[#93C5FD] opacity-40 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[40rem] w-[40rem] translate-y-1/4 translate-x-1/4 rounded-full bg-[#D8B4FE] opacity-40 blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-border bg-card shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
+        <div className="grid md:grid-cols-[1.1fr_0.9fr]">
+          <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.24),_transparent_38%),linear-gradient(135deg,_#0f172a_0%,_#1e293b_55%,_#334155_100%)] p-8 text-white sm:p-10 lg:p-12">
           <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.08),transparent_35%,rgba(255,255,255,0.05)_70%,transparent)]" />
           <div className="relative flex h-full flex-col justify-between gap-10">
             <div className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur">
@@ -62,24 +68,24 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.28em] text-slate-300/90">Truy cập an toàn</p>
+              <p className="text-sm uppercase tracking-[0.28em] text-slate-300/90">NỀN TẢNG HỌC THUẬT SỐ</p>
               <h1 className="max-w-md text-4xl font-semibold tracking-tight sm:text-5xl">
-                Quản lý học kỳ, khóa học và đăng ký trên một hệ thống duy nhất.
+                IUH-EduHub: Hệ thống quản lý học kỳ, khóa học và đăng ký môn học chuyên nghiệp
               </h1>
               <p className="max-w-lg text-base leading-7 text-slate-200/90 sm:text-lg">
-                Đăng nhập để tiếp tục vào bảng điều khiển học vụ và xử lý luồng công việc sinh viên mà không cần chuyển công cụ.
+                Hãy đăng nhập ngay để tiếp tục quản lý học tập và trải nghiệm các tiện ích sinh viên tích hợp.
               </p>
             </div>
 
             <div className="grid gap-3 text-sm text-slate-200/90 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                Đăng nhập nhanh
+                Giao diện thân thiện
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
                 Phân quyền theo vai trò
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                Sẵn sàng cho bảng điều khiển
+                Dashboard trực quan
               </div>
             </div>
           </div>
@@ -171,5 +177,6 @@ export default function LoginPage() {
         </section>
       </div>
     </div>
+    </>
   );
 }

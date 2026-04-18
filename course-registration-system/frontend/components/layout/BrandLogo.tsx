@@ -40,7 +40,7 @@ export function BrandLogo({ size = "md", tone = "default", showWordmark = true, 
       <span className={cn("flex shrink-0 overflow-hidden rounded-2xl", iconSizeClasses[size])}>
         <Image
           src="/iuh-eduhub-logo.svg"
-          alt={showWordmark ? "" : "IUHEduHub"}
+          alt={showWordmark ? "" : "IUH-EduHub"}
           aria-hidden={showWordmark}
           width={iconPixelSizes[size]}
           height={iconPixelSizes[size]}
@@ -50,7 +50,7 @@ export function BrandLogo({ size = "md", tone = "default", showWordmark = true, 
 
       {showWordmark ? (
         <span className={cn("font-semibold tracking-tight", wordmarkSizeClasses[size], wordmarkToneClasses[tone])}>
-          IUHEduHub
+          IUH-EduHub
         </span>
       ) : null}
     </div>

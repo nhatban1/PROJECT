@@ -25,6 +25,48 @@ export interface DashboardStats {
   registrationCount: number;
 }
 
+export interface AdminDashboardData {
+  role: "admin";
+  studentCount: number;
+  teacherCount: number;
+  courseCount: number;
+  registrationCount: number;
+}
+
+export interface StudentDashboardData {
+  role: "student";
+  activeSemester?: SemesterSummary | null;
+  registeredCourseCount: number;
+  openCourseCount: number;
+  registrations: RegistrationRecord[];
+}
+
+export interface TeacherDashboardCourseSummary {
+  _id: string;
+  courseId: string;
+  name: string;
+  currentStudents: number;
+  maxStudents: number;
+  status: "open" | "closed" | "full";
+  semesterId?: SemesterSummary | string;
+  schedule?: {
+    dayOfWeek: number;
+    startPeriod: number;
+    endPeriod: number;
+    room?: string;
+  };
+}
+
+export interface TeacherDashboardData {
+  role: "teacher";
+  activeSemester?: SemesterSummary | null;
+  courseCount: number;
+  totalRegisteredStudents: number;
+  courses: TeacherDashboardCourseSummary[];
+}
+
+export type DashboardData = AdminDashboardData | StudentDashboardData | TeacherDashboardData;
+
 export interface TeacherSummary {
   _id?: string;
   teacherId?: string;
@@ -44,6 +86,9 @@ export interface StudentSummary {
   fullName?: string;
   email?: string;
   role?: string;
+  phone?: string;
+  department?: string;
+  academicYear?: string;
 }
 
 export type MaybePopulated<T> = string | T;
@@ -57,6 +102,7 @@ export interface StudentRecord {
   department?: string;
   academicYear?: string;
   role?: string;
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -66,6 +112,10 @@ export interface TeacherRecord {
   teacherId: string;
   fullName: string;
   department?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -102,4 +152,10 @@ export interface RegistrationRecord {
   cancelReason?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface CourseRosterResponse {
+  course: CourseRecord;
+  registrations: RegistrationRecord[];
+  total: number;
 }

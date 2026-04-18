@@ -26,7 +26,7 @@ export function Navbar() {
   const activeSection = segments[0] || "dashboard";
   const formattedTitle = routeTitles[activeSection] ?? "Bảng điều khiển";
   const displayName = user?.fullName ?? user?.email ?? "Quản trị viên";
-  const displayEmail = user?.email ?? "admin@iuh-eduhub.vn";
+  const displayEmail = user?.email ?? "admin@iuh.edu.vn";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-card/80">

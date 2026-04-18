@@ -18,10 +18,9 @@ import {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
 
-  // Typically, these routes would be filtered by user role
-  const routes = [
+  const adminRoutes = [
     { name: "Bảng điều khiển", path: "/dashboard", icon: LayoutDashboard },
     { name: "Sinh viên", path: "/students", icon: Users },
     { name: "Giảng viên", path: "/teachers", icon: GraduationCap },
@@ -30,6 +29,14 @@ export function Sidebar() {
     { name: "Tìm kiếm", path: "/search", icon: Search },
     { name: "Báo cáo", path: "/reports", icon: FileBarChart },
   ];
+
+  const sharedRoutes = [
+    { name: "Bảng điều khiển", path: "/dashboard", icon: LayoutDashboard },
+    { name: "Khóa học", path: "/courses", icon: BookOpen },
+    { name: "Đăng ký học phần", path: "/registration", icon: CalendarDays },
+  ];
+
+  const routes = user?.role === "admin" ? adminRoutes : sharedRoutes;
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card text-foreground">

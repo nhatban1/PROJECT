@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Clock3, Layers3 } from "lucide-react";
+import { BookOpen, Clock3, Layers3, Trash2 } from "lucide-react";
 
 import { ResourceTable } from "@/components/app/ResourceTable";
+import { useAuth } from "@/components/layout/AuthProvider";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
 import { cn, ensureArray } from "@/lib/utils";
 import { formatNumber, formatScheduleText, formatStatusLabel } from "@/lib/format";
@@ -52,49 +53,37 @@ function statusClass(status: CourseRecord["status"]) {
 
 export default function CoursesPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [courses, setCourses] = useState<CourseRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [deletingCourseId, setDeletingCourseId] = useState("");
+
+  const loadCourses = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    setStatusMessage("");
+
+    try {
+      const response = await apiFetch<CourseRecord[]>("/courses?page=1&limit=500");
+      setCourses(ensureArray<CourseRecord>(response.data));
+    } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearAuthToken();
+        router.replace("/login");
+        return;
+      }
+
+      setError(fetchError instanceof Error ? fetchError.message : "Không tải được danh sách khóa học");
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadCourses() {
-      setLoading(true);
-      setError("");
-
-      try {
-        const response = await apiFetch<CourseRecord[]>("/courses?page=1&limit=500");
-        if (cancelled) {
-          return;
-        }
-
-        setCourses(ensureArray<CourseRecord>(response.data));
-      } catch (fetchError) {
-        if (cancelled) {
-          return;
-        }
-
-        if (fetchError instanceof ApiError && fetchError.status === 401) {
-          clearAuthToken();
-          router.replace("/login");
-          return;
-        }
-
-        setError(fetchError instanceof Error ? fetchError.message : "Không tải được danh sách khóa học");
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
     void loadCourses();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+  }, [loadCourses]);
 
   const courseStats = useMemo(() => {
     const open = courses.filter((course) => course.status === "open").length;
@@ -104,6 +93,37 @@ export default function CoursesPage() {
 
     return { open, full, closed, totalCapacity };
   }, [courses]);
+
+  const isAdmin = user?.role === "admin";
+
+  async function handleDelete(course: CourseRecord) {
+    if (!window.confirm(`Xóa lớp ${course.name}? Thao tác này sẽ hủy các đăng ký liên quan.`)) {
+      return;
+    }
+
+    setDeletingCourseId(course._id);
+    setError("");
+    setStatusMessage("");
+
+    try {
+      await apiFetch(`/courses/${course._id}`, {
+        method: "DELETE",
+      });
+
+      setStatusMessage(`Đã xóa lớp ${course.name}`);
+      await loadCourses();
+    } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearAuthToken();
+        router.replace("/login");
+        return;
+      }
+
+      setError(fetchError instanceof Error ? fetchError.message : "Không thể xóa lớp học");
+    } finally {
+      setDeletingCourseId("");
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -135,6 +155,18 @@ export default function CoursesPage() {
           </div>
         </div>
       </section>
+
+      {isAdmin ? (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-5 py-4 text-sm text-amber-900 dark:text-amber-200">
+          Admin có thể xóa lớp học. Khi xóa, toàn bộ lượt đăng ký của lớp đó sẽ được hủy và lớp sẽ không còn hiển thị trong danh sách.
+        </div>
+      ) : null}
+
+      {statusMessage ? (
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-700 dark:text-emerald-300">
+          {statusMessage}
+        </div>
+      ) : null}
 
       <ResourceTable
         loading={loading}
@@ -206,6 +238,29 @@ export default function CoursesPage() {
               </span>
             ),
           },
+          ...(isAdmin
+            ? [
+                {
+                  header: "Hành động",
+                  render: (course: CourseRecord) => (
+                    <button
+                      type="button"
+                      disabled={deletingCourseId === course._id}
+                      onClick={() => void handleDelete(course)}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                        deletingCourseId === course._id
+                          ? "cursor-not-allowed bg-muted text-muted-foreground"
+                          : "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                      )}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {deletingCourseId === course._id ? "Đang xóa..." : "Xóa"}
+                    </button>
+                  ),
+                },
+              ]
+            : []),
         ]}
       />
     </div>

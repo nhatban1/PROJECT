@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 
@@ -16,6 +16,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Đang tải trang đăng nhập...
+      </div>
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,7 +126,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
-                  placeholder="admin@iuh-eduhub.vn"
+                  placeholder="Admin@iuh.edu.vn"
                 />
               </div>
             </div>

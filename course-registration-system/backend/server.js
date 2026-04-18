@@ -14,6 +14,7 @@ const registrationRoutes = require("./routes/registrationRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const { startCourseLifecycleJobs } = require("./utils/courseLifecycle");
 
 const app = express();
 
@@ -49,8 +50,19 @@ const PORT = process.env.PORT || 5000;
 
 connectDB()
   .then(() => {
-    app.listen(PORT, () => {
+    startCourseLifecycleJobs();
+    const server = app.listen(PORT, () => {
       console.log(`Server running http://localhost:${PORT}`);
+    });
+
+    server.on("error", (error) => {
+      if (error && error.code === "EADDRINUSE") {
+        console.error(`Port ${PORT} is already in use. Another backend instance may already be running.`);
+        process.exit(0);
+      }
+
+      console.error("Server failed to start", error);
+      process.exit(1);
     });
   })
   .catch((err) => {

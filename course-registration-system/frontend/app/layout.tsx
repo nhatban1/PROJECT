@@ -34,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background text-foreground antialiased`}>
+      <body suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background text-foreground antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
           <Toaster richColors />

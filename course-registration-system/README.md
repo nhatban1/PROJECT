@@ -105,14 +105,27 @@ npm run start
 
 Sau khi nạp dữ liệu mẫu, có thể dùng các tài khoản sau. / After seeding demo data, use these accounts:
 
-- Admin: `admin@example.com` / `Admin123!`
-- Student: `student@example.com` / `Student123!`
+- Admin: `Admin@iuh.edu.vn` / `AD001`
+- Giảng viên / Teachers: `gv001@iuh.edu.vn` đến `gv078@iuh.edu.vn`, mật khẩu trùng với mã `GV001`...`GV078`. / Password matches the ID code.
+- Sinh viên / Students: `sv001@iuh.edu.vn` đến `sv010@iuh.edu.vn`, mật khẩu trùng với mã `SV001`...`SV010`. / Password matches the ID code.
+- Các `userId` được tạo theo thứ tự: `AD001`, `GV001`... `GV078`, `SV001`... `SV010`.
+
+## Cách test website / How to test
+
+1. Chạy seed lại cơ sở dữ liệu bằng `cd backend && node seed/seedData.js`. / Reseed the database with `cd backend && node seed/seedData.js`.
+2. Mở backend bằng `cd backend && npm run dev`. / Start the backend with `cd backend && npm run dev`.
+3. Mở frontend bằng `cd frontend && npm run dev` hoặc `bun run dev` nếu môi trường Bun đã sẵn sàng. / Start the frontend with `cd frontend && npm run dev` or `bun run dev` if Bun is available.
+4. Đăng nhập sinh viên bằng `sv001@iuh.edu.vn` / `SV001`, mở trang `Đăng ký học phần`, chọn một môn đang mở trong học kỳ hiện tại và bấm `Đăng ký`. Sau đó kiểm tra mục `Môn đã đăng ký` và `Khóa học` để thấy số sĩ số thay đổi.
+5. Đăng nhập giảng viên bằng `gv001@iuh.edu.vn` / `GV001`, mở trang `Đăng ký học phần`, chọn lớp của mình trong phần `Xem sinh viên theo lớp` để xem số lượng sinh viên và danh sách sinh viên đã đăng ký. Các thao tác thêm/sửa/xóa vẫn thuộc admin.
+6. Đăng nhập admin bằng `Admin@iuh.edu.vn` / `AD001`, kiểm tra `Dashboard`, `Students`, `Teachers`, `Courses`, `Đăng ký học phần` và `Reports`. Admin có thể xem toàn bộ danh sách đăng ký và lịch sử.
 
 ## Seed dữ liệu mẫu / Seed Data
 
 File seed nằm ở [backend/seed/seedData.js](backend/seed/seedData.js). Script này xóa sạch dữ liệu hiện có trước khi tạo lại dữ liệu demo, nên chỉ nên chạy khi bạn chấp nhận reset database.
 
 The seed file is located at [backend/seed/seedData.js](backend/seed/seedData.js). It deletes existing data before recreating demo records, so only run it when you are okay with resetting the database.
+
+Sau khi seed, các collection chính dùng mã chuỗi theo thứ tự như `AD001`, `GV001`, `SV001`, `HK001`, `MH001`, `DK001`, `TB001` thay cho `ObjectId` mặc định. / After seeding, the main collections use ordered string IDs such as `AD001`, `GV001`, `SV001`, `HK001`, `MH001`, `DK001`, `TB001` instead of the default `ObjectId` values.
 
 Chạy thủ công / Run manually:
 

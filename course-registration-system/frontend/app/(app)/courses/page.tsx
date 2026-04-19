@@ -8,7 +8,7 @@ import { ResourceTable } from "@/components/app/ResourceTable";
 import { useAuth } from "@/components/layout/AuthProvider";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
 import { cn, ensureArray } from "@/lib/utils";
-import { formatNumber, formatScheduleText, formatStatusLabel } from "@/lib/format";
+import { formatCreditBreakdown, formatCurrency, formatNumber, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus } from "@/lib/format";
 import type { CourseRecord } from "@/lib/types";
 
 function resolveLabel(value: CourseRecord["teacherId"] | CourseRecord["semesterId"]): string {
@@ -39,12 +39,16 @@ function resolveLabel(value: CourseRecord["teacherId"] | CourseRecord["semesterI
   return "-";
 }
 
-function statusClass(status: CourseRecord["status"]) {
+function statusClass(status: string) {
   if (status === "full") {
     return "bg-destructive/10 text-destructive border-destructive/20";
   }
 
-  if (status === "closed") {
+  if (status === "ongoing") {
+    return "bg-sky-500/10 text-sky-700 border-sky-200/60 dark:text-sky-300 dark:border-sky-500/20";
+  }
+
+  if (status === "closed" || status === "planned") {
     return "bg-muted text-muted-foreground border-border";
   }
 
@@ -59,6 +63,7 @@ export default function CoursesPage() {
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [deletingCourseId, setDeletingCourseId] = useState("");
+  const [updatingCourseId, setUpdatingCourseId] = useState("");
 
   const loadCourses = useCallback(async () => {
     setLoading(true);
@@ -86,9 +91,12 @@ export default function CoursesPage() {
   }, [loadCourses]);
 
   const courseStats = useMemo(() => {
-    const open = courses.filter((course) => course.status === "open").length;
-    const full = courses.filter((course) => course.status === "full").length;
-    const closed = courses.filter((course) => course.status === "closed").length;
+    const open = courses.filter((course) => resolveCourseDisplayStatus(course) === "open").length;
+    const full = courses.filter((course) => resolveCourseDisplayStatus(course) === "full").length;
+    const closed = courses.filter((course) => {
+      const displayStatus = resolveCourseDisplayStatus(course);
+      return displayStatus === "closed" || displayStatus === "planned";
+    }).length;
     const totalCapacity = courses.reduce((sum, course) => sum + (course.maxStudents || 0), 0);
 
     return { open, full, closed, totalCapacity };
@@ -125,6 +133,65 @@ export default function CoursesPage() {
     }
   }
 
+  async function handleUpdateCourse(course: CourseRecord, payload: Record<string, unknown>, successMessage: string) {
+    setUpdatingCourseId(course._id);
+    setError("");
+    setStatusMessage("");
+
+    try {
+      await apiFetch(`/courses/${course._id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+
+      setStatusMessage(successMessage);
+      await loadCourses();
+    } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearAuthToken();
+        router.replace("/login");
+        return;
+      }
+
+      setError(fetchError instanceof Error ? fetchError.message : "Không thể cập nhật khóa học");
+    } finally {
+      setUpdatingCourseId("");
+    }
+  }
+
+  async function handleChangeCapacity(course: CourseRecord) {
+    const nextCapacity = window.prompt(`Nhập sĩ số mới cho lớp ${course.name}`, String(course.maxStudents));
+    if (nextCapacity === null) {
+      return;
+    }
+
+    const parsedCapacity = Number(nextCapacity);
+    if (!Number.isInteger(parsedCapacity) || parsedCapacity < 1) {
+      setError("Sĩ số phải là số nguyên lớn hơn 0");
+      return;
+    }
+
+    await handleUpdateCourse(course, { maxStudents: parsedCapacity }, `Đã cập nhật sĩ số lớp ${course.name}`);
+  }
+
+  async function handleOpenCourse(course: CourseRecord) {
+    const confirmed = window.confirm(`Mở lớp ${course.name}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    await handleUpdateCourse(course, { status: "open" }, `Đã mở lại lớp ${course.name}`);
+  }
+
+  async function handleCloseCourse(course: CourseRecord) {
+    const confirmed = window.confirm(`Khóa lớp ${course.name}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    await handleUpdateCourse(course, { status: "closed" }, `Đã khóa lớp ${course.name}`);
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
@@ -155,12 +222,6 @@ export default function CoursesPage() {
           </div>
         </div>
       </section>
-
-      {isAdmin ? (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-5 py-4 text-sm text-amber-900 dark:text-amber-200">
-          Admin có thể xóa lớp học. Khi xóa, toàn bộ lượt đăng ký của lớp đó sẽ được hủy và lớp sẽ không còn hiển thị trong danh sách.
-        </div>
-      ) : null}
 
       {statusMessage ? (
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-700 dark:text-emerald-300">
@@ -216,9 +277,13 @@ export default function CoursesPage() {
             render: (course) => (
               <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-semibold text-foreground">
                 <BookOpen className="mr-1 h-3.5 w-3.5" />
-                {course.credits}
+                {formatCreditBreakdown(course)}
               </span>
             ),
+          },
+          {
+            header: "Giá",
+            render: (course) => <span className="font-medium text-foreground">{formatCurrency(course.price)}</span>,
           },
           {
             header: "Sĩ số",
@@ -232,9 +297,9 @@ export default function CoursesPage() {
           {
             header: "Trạng thái",
             render: (course) => (
-              <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", statusClass(course.status))}>
+              <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", statusClass(resolveCourseDisplayStatus(course)))}>
                 <Layers3 className="mr-1 h-3.5 w-3.5" />
-                {formatStatusLabel(course.status)}
+                {formatStatusLabel(resolveCourseDisplayStatus(course))}
               </span>
             ),
           },
@@ -243,20 +308,65 @@ export default function CoursesPage() {
                 {
                   header: "Hành động",
                   render: (course: CourseRecord) => (
-                    <button
-                      type="button"
-                      disabled={deletingCourseId === course._id}
-                      onClick={() => void handleDelete(course)}
-                      className={cn(
-                        "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
-                        deletingCourseId === course._id
-                          ? "cursor-not-allowed bg-muted text-muted-foreground"
-                          : "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={updatingCourseId === course._id}
+                        onClick={() => void handleChangeCapacity(course)}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                          updatingCourseId === course._id
+                            ? "cursor-not-allowed bg-muted text-muted-foreground"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90",
+                        )}
+                      >
+                        {updatingCourseId === course._id ? "Đang sửa..." : "Sửa sĩ số"}
+                      </button>
+                      {course.status !== "open" ? (
+                        <button
+                          type="button"
+                          disabled={updatingCourseId === course._id}
+                          onClick={() => void handleOpenCourse(course)}
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                            updatingCourseId === course._id
+                              ? "cursor-not-allowed bg-muted text-muted-foreground"
+                              : "bg-emerald-600 text-white hover:bg-emerald-500",
+                          )}
+                        >
+                          {updatingCourseId === course._id ? "Đang mở..." : "Mở lại"}
+                        </button>
+                      ) : null}
+                      {course.status === "closed" || course.status === "planned" ? null : (
+                        <button
+                          type="button"
+                          disabled={updatingCourseId === course._id}
+                          onClick={() => void handleCloseCourse(course)}
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                            updatingCourseId === course._id
+                              ? "cursor-not-allowed bg-muted text-muted-foreground"
+                              : "bg-amber-600 text-white hover:bg-amber-500",
+                          )}
+                        >
+                          {updatingCourseId === course._id ? "Đang khóa..." : "Khóa lớp"}
+                        </button>
                       )}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      {deletingCourseId === course._id ? "Đang xóa..." : "Xóa"}
-                    </button>
+                      <button
+                        type="button"
+                        disabled={deletingCourseId === course._id}
+                        onClick={() => void handleDelete(course)}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                          deletingCourseId === course._id
+                            ? "cursor-not-allowed bg-muted text-muted-foreground"
+                            : "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                        )}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        {deletingCourseId === course._id ? "Đang xóa..." : "Xóa"}
+                      </button>
+                    </div>
                   ),
                 },
               ]

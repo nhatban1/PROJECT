@@ -1,41 +1,47 @@
 const Course = require('../models/Course');
-const Registration = require('../models/Registration');
+const { applyCourseStatus, resolveCourseStatus } = require('./courseState');
 
-const AUTO_CANCEL_MINUTES = Number(process.env.COURSE_AUTO_CANCEL_MINUTES || 30);
-const CHECK_INTERVAL_MS = Number(process.env.COURSE_AUTO_CANCEL_CHECK_INTERVAL_MS || 5 * 60 * 1000);
-const MINIMUM_STUDENTS = Number(process.env.COURSE_MINIMUM_STUDENTS || 2);
+const CHECK_INTERVAL_MS = Number(process.env.COURSE_LIFECYCLE_CHECK_INTERVAL_MS || 5 * 60 * 1000);
+const PLANNED_TO_OPEN_DAYS = Number(process.env.COURSE_PLANNED_TO_OPEN_DAYS || 7);
+const FULL_TO_CLOSE_DAYS = Number(process.env.COURSE_FULL_TO_CLOSE_DAYS || 30);
 
 let lifecycleTimer = null;
 
-async function cancelUnderfilledCourses() {
-  const thresholdDate = new Date(Date.now() - AUTO_CANCEL_MINUTES * 60 * 1000);
+function isOlderThan(date, days, now = new Date()) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const thresholdDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  return date.getTime() <= thresholdDate.getTime();
+}
+
+async function syncCourseLifecycle() {
+  const now = new Date();
 
   const candidates = await Course.find({
     deletedAt: { $exists: false },
-    status: 'open',
-    currentStudents: { $lt: MINIMUM_STUDENTS },
-    createdAt: { $lte: thresholdDate },
+    status: { $in: ['planned', 'open', 'full'] },
   });
 
   for (const course of candidates) {
-    const now = new Date();
+    if (course.status === 'planned' && isOlderThan(course.createdAt, PLANNED_TO_OPEN_DAYS, now)) {
+      applyCourseStatus(course, resolveCourseStatus(course, 'open'), now);
+      await course.save();
+      continue;
+    }
 
-    await Registration.updateMany(
-      { courseId: course._id, status: 'registered' },
-      {
-        $set: {
-          status: 'cancelled',
-          cancelledAt: now,
-          cancelReason: 'Lớp học tự động hủy vì không đủ 2 sinh viên',
-        },
-      }
-    );
+    if (course.status === 'open' && course.currentStudents >= course.maxStudents) {
+      applyCourseStatus(course, 'full', now);
+      await course.save();
+      continue;
+    }
 
-    course.currentStudents = 0;
-    course.status = 'closed';
-    course.cancelledAt = now;
-    course.cancelReason = 'Lớp học tự động hủy vì không đủ 2 sinh viên';
-    await course.save();
+    const fullSince = course.fullAt || course.updatedAt || course.createdAt;
+    if (course.status === 'full' && isOlderThan(fullSince, FULL_TO_CLOSE_DAYS, now)) {
+      applyCourseStatus(course, 'closed', now);
+      await course.save();
+    }
   }
 }
 
@@ -46,7 +52,7 @@ function startCourseLifecycleJobs() {
 
   const runCheck = async () => {
     try {
-      await cancelUnderfilledCourses();
+      await syncCourseLifecycle();
     } catch (error) {
       console.error('Course lifecycle check failed', error);
     }
@@ -62,5 +68,5 @@ function startCourseLifecycleJobs() {
 
 module.exports = {
   startCourseLifecycleJobs,
-  cancelUnderfilledCourses,
+  syncCourseLifecycle,
 };

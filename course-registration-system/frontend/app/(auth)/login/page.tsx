@@ -1,10 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, Eye, EyeOff, Lock, Mail, Users } from "lucide-react";
 
-import { BrandLogo } from "@/components/layout/BrandLogo";
 import { Button } from "@/components/ui/button";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api";
@@ -65,131 +65,174 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-0 left-0 h-[40rem] w-[40rem] -translate-y-1/4 -translate-x-1/4 rounded-full bg-[#93C5FD] opacity-40 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[40rem] w-[40rem] translate-y-1/4 translate-x-1/4 rounded-full bg-[#D8B4FE] opacity-40 blur-[120px]" />
+    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f8fafc_0%,#eff6ff_42%,#dbeafe_100%)] text-foreground">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 top-0 h-[32rem] w-[32rem] rounded-full bg-[#93C5FD]/35 blur-[120px]" />
+        <div className="absolute right-[-8rem] top-24 h-[28rem] w-[28rem] rounded-full bg-[#1D4ED8]/20 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/2 h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-[#0F4C81]/15 blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.55)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.55)_1px,transparent_1px)] bg-[size:72px_72px] opacity-25" />
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-border bg-card shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
-        <div className="grid md:grid-cols-[1.1fr_0.9fr]">
-          <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.24),_transparent_38%),linear-gradient(135deg,_#0f172a_0%,_#1e293b_55%,_#334155_100%)] p-8 text-white sm:p-10 lg:p-12">
-          <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.08),transparent_35%,rgba(255,255,255,0.05)_70%,transparent)]" />
-          <div className="relative flex h-full flex-col justify-between gap-10">
-            <div className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur">
-              <BrandLogo size="md" tone="inverse" />
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.28em] text-slate-300/90">NỀN TẢNG HỌC THUẬT SỐ</p>
-              <h1 className="max-w-md text-4xl font-semibold tracking-tight sm:text-5xl">
-                IUH-EduHub: Hệ thống quản lý học kỳ, khóa học và đăng ký môn học chuyên nghiệp
-              </h1>
-              <p className="max-w-lg text-base leading-7 text-slate-200/90 sm:text-lg">
-                Hãy đăng nhập ngay để tiếp tục quản lý học tập và trải nghiệm các tiện ích sinh viên tích hợp.
-              </p>
-            </div>
-
-            <div className="grid gap-3 text-sm text-slate-200/90 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                Giao diện thân thiện
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                Phân quyền theo vai trò
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                Dashboard trực quan
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8">
+        <header className="mb-6 flex justify-center">
+          <div className="w-full max-w-3xl rounded-[2rem] border border-white/70 bg-white/80 px-6 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.14)] backdrop-blur">
+            <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
+              <Image src="/iuh-eduhub-logo.svg" alt="IUH EduHub" width={320} height={88} priority className="h-16 w-auto sm:h-20" />
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Industrial University of Ho Chi Minh City</p>
+                <p className="text-sm text-muted-foreground">Cổng đăng nhập hệ thống đăng ký học phần và quản lý lớp học.</p>
               </div>
             </div>
           </div>
-        </section>
+        </header>
 
-        <section className="p-8 sm:p-10 lg:p-12">
-          <div className="mb-8 space-y-2">
-            <h2 className="text-3xl font-semibold tracking-tight text-foreground">Chào mừng trở lại</h2>
-            <p className="text-sm text-muted-foreground">Nhập tài khoản của bạn để tiếp tục.</p>
+        <main className="flex flex-1 items-center justify-center py-2">
+          <div className="w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur-lg">
+            <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
+              <section className="relative overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_48%,#2563eb_100%)] p-8 text-white sm:p-10 lg:p-12">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_32%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_40%,rgba(255,255,255,0.06)_72%,transparent)]" />
+                <div className="relative flex h-full flex-col justify-between gap-10">
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <h1 className="max-w-md text-4xl font-semibold tracking-tight sm:text-5xl">Đăng ký môn học</h1>
+                      <p className="max-w-lg text-sm leading-7 text-sky-50/90 sm:text-base">
+                        Đăng nhập để xem môn học, chọn lớp và đăng ký các học phần đang mở.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                      <BookOpen className="h-5 w-5 text-sky-100" />
+                      <p className="mt-3 text-sm font-semibold">Đăng ký môn học</p>
+                      <p className="mt-1 text-xs leading-6 text-sky-50/80">Xem môn học và đăng ký lớp phù hợp.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                      <CalendarDays className="h-5 w-5 text-sky-100" />
+                      <p className="mt-3 text-sm font-semibold">Xem lịch học</p>
+                      <p className="mt-1 text-xs leading-6 text-sky-50/80">Theo dõi buổi học và thời gian học.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                      <Users className="h-5 w-5 text-sky-100" />
+                      <p className="mt-3 text-sm font-semibold">Tra cứu lớp</p>
+                      <p className="mt-1 text-xs leading-6 text-sky-50/80">Xem sĩ số và thông tin lớp học.</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="p-8 sm:p-10 lg:p-12">
+                <div className="mb-8 space-y-3">
+                  <p className="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">
+                    Đăng nhập hệ thống
+                  </p>
+                  <h2 className="text-3xl font-semibold tracking-tight text-foreground">Chào mừng trở lại</h2>
+                  <p className="text-sm leading-6 text-muted-foreground">Nhập email và mật khẩu để tiếp tục.</p>
+                </div>
+
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium text-foreground">
+                      Email
+                    </label>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
+                        placeholder="Admin@iuh.edu.vn"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="password" className="text-sm font-medium text-foreground">
+                      Mật khẩu
+                    </label>
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        required
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-12 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
+                        placeholder="Nhập mật khẩu của bạn"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((current) => !current)}
+                        className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {error ? (
+                    <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                      {error}
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <label className="inline-flex items-center gap-2">
+                      <input type="checkbox" className="h-4 w-4 rounded border-input text-primary focus:ring-primary" />
+                      Ghi nhớ tôi
+                    </label>
+                    <button type="button" className="font-medium text-primary transition hover:text-primary/80">
+                      Quên mật khẩu?
+                    </button>
+                  </div>
+
+                  <Button type="submit" className="h-11 w-full rounded-xl text-sm font-semibold" disabled={loading}>
+                    {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+                    {!loading ? <ArrowRight className="h-4 w-4" /> : null}
+                  </Button>
+                </form>
+
+                <p className="mt-6 text-center text-sm text-muted-foreground">Bạn cần tài khoản? Hãy liên hệ quản trị viên.</p>
+              </section>
+            </div>
+          </div>
+        </main>
+
+        <footer className="mt-6 overflow-hidden rounded-[0.5rem] border border-[#0b63c9]/20 bg-[#0f74e8] text-white shadow-[0_16px_40px_rgba(15,116,232,0.22)]">
+          <div className="grid gap-px lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
+            <div className="px-5 py-4 sm:px-6 sm:py-5">
+              <p className="text-[15px] font-semibold uppercase tracking-wide">TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP TP HỒ CHÍ MINH</p>
+              <div className="mt-2 space-y-1 text-sm leading-6 text-white/95">
+                <p>Địa chỉ : Số 12 Nguyễn Văn Bảo, Phường 4, Quận Gò Vấp, TP. Hồ Chí Minh</p>
+                <p>Điện thoại: 0283 8940 390</p>
+                <p>Fax: 0283 9940 954</p>
+                <p>Email: dhcn@iuh.edu.vn</p>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 sm:px-6 sm:py-5 lg:text-right">
+              <p className="text-[15px] font-semibold uppercase tracking-wide">Thống kê truy cập</p>
+              <div className="mt-2 space-y-1 text-sm leading-6 text-white/95 lg:ml-auto lg:max-w-xs">
+                <p>Lượt truy cập: 1792112</p>
+                <p>Đang online: 220</p>
+              </div>
+            </div>
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-foreground">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
-                  placeholder="Admin@iuh.edu.vn"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-foreground">
-                Mật khẩu
-              </label>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-12 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
-                  placeholder="Nhập mật khẩu của bạn"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {error ? (
-              <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {error}
-              </div>
-            ) : null}
-
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <label className="inline-flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                />
-                Ghi nhớ tôi
-              </label>
-              <button type="button" className="font-medium text-primary transition hover:text-primary/80">
-                Quên mật khẩu?
-              </button>
-            </div>
-
-            <Button type="submit" className="h-11 w-full rounded-xl text-sm font-semibold" disabled={loading}>
-              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-              {!loading ? <ArrowRight className="h-4 w-4" /> : null}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Bạn cần tài khoản? Hãy liên hệ quản trị viên.
-          </p>
-        </section>
+          <div className="bg-[#5aa6ef] px-5 py-3 text-center text-sm font-medium text-white sm:px-6">
+            Bản quyền 2018 - Trường Đại học Công nghiệp TP. Hồ Chí Minh
+          </div>
+        </footer>
       </div>
     </div>
-    </>
   );
 }

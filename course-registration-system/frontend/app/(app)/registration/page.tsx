@@ -5,23 +5,35 @@ import { useRouter } from "next/navigation";
 import {
   BookOpen,
   ClipboardList,
+  Download,
   GraduationCap,
   Phone,
+  UserPlus,
   RotateCcw,
 } from "lucide-react";
 
 import { ResourceTable } from "@/components/app/ResourceTable";
 import { useAuth } from "@/components/layout/AuthProvider";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
-import { formatDateTime, formatNumber, formatScheduleText, formatStatusLabel } from "@/lib/format";
+import { formatCreditBreakdown, formatCurrency, formatDateTime, formatNumber, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus } from "@/lib/format";
 import { cn, ensureArray } from "@/lib/utils";
+import pdfMakeBase from "pdfmake/build/pdfmake";
+import robotoFontContainer from "pdfmake/build/fonts/Roboto";
 import type {
   ApiResponse,
   CourseRecord,
   CourseRosterResponse,
   RegistrationRecord,
   SemesterSummary,
+  StudentRecord,
 } from "@/lib/types";
+
+const pdfMake = pdfMakeBase as unknown as {
+  addFontContainer: (fontContainer: unknown) => void;
+  createPdf: (definition: unknown) => { download: (fileName: string) => void };
+};
+
+pdfMake.addFontContainer(robotoFontContainer);
 
 function resolveTeacherLabel(value: CourseRecord["teacherId"]): string {
   if (!value) {
@@ -95,6 +107,14 @@ function resolveStudentKey(value: RegistrationRecord["studentId"]): string {
   return value._id ?? value.userId ?? "";
 }
 
+function resolveCoursePrice(course: CourseRecord | null | undefined) {
+  if (!course || typeof course.price !== "number") {
+    return "-";
+  }
+
+  return formatCurrency(course.price);
+}
+
 function registrationStatusClass(status: RegistrationRecord["status"]) {
   if (status === "cancelled") {
     return "bg-destructive/10 text-destructive border-destructive/20";
@@ -103,12 +123,16 @@ function registrationStatusClass(status: RegistrationRecord["status"]) {
   return "bg-emerald-500/10 text-emerald-700 border-emerald-200/60 dark:text-emerald-300 dark:border-emerald-500/20";
 }
 
-function courseStatusClass(status: CourseRecord["status"]) {
+function courseStatusClass(status: string) {
   if (status === "full") {
     return "bg-destructive/10 text-destructive border-destructive/20";
   }
 
-  if (status === "closed") {
+  if (status === "ongoing") {
+    return "bg-sky-500/10 text-sky-700 border-sky-200/60 dark:text-sky-300 dark:border-sky-500/20";
+  }
+
+  if (status === "closed" || status === "planned") {
     return "bg-muted text-muted-foreground border-border";
   }
 
@@ -145,7 +169,10 @@ export default function RegistrationPage() {
   const [courses, setCourses] = useState<CourseRecord[]>([]);
   const [myRegistrations, setMyRegistrations] = useState<RegistrationRecord[]>([]);
   const [allRegistrations, setAllRegistrations] = useState<RegistrationRecord[]>([]);
+  const [adminStudents, setAdminStudents] = useState<StudentRecord[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedAdminStudentId, setSelectedAdminStudentId] = useState("");
+  const [selectedAdminCourseId, setSelectedAdminCourseId] = useState("");
   const [selectedRoster, setSelectedRoster] = useState<CourseRosterResponse | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [rosterLoading, setRosterLoading] = useState(false);
@@ -153,6 +180,8 @@ export default function RegistrationPage() {
   const [statusMessage, setStatusMessage] = useState("");
   const [busyCourseId, setBusyCourseId] = useState("");
   const [busyRegistrationId, setBusyRegistrationId] = useState("");
+  const [adminEnrollmentLoading, setAdminEnrollmentLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [rosterError, setRosterError] = useState("");
 
   const role = user?.role ?? "student";
@@ -162,6 +191,11 @@ export default function RegistrationPage() {
     setError("");
 
     try {
+      const studentRequest =
+        role === "admin"
+          ? apiFetch<StudentRecord[]>("/users?page=1&limit=500&role=student")
+          : Promise.resolve<ApiResponse<StudentRecord[]> | null>(null);
+
       const registrationRequest =
         role === "student"
           ? apiFetch<RegistrationRecord[]>("/registrations/my")
@@ -169,10 +203,11 @@ export default function RegistrationPage() {
             ? apiFetch<RegistrationRecord[]>("/registrations?page=1&limit=500")
             : Promise.resolve<ApiResponse<RegistrationRecord[]> | null>(null);
 
-      const [semesterResponse, courseResponse, registrationResponse] = await Promise.all([
+      const [semesterResponse, courseResponse, registrationResponse, studentResponse] = await Promise.all([
         apiFetch<SemesterSummary>("/semesters/active"),
         apiFetch<CourseRecord[]>("/courses?page=1&limit=500"),
         registrationRequest,
+        studentRequest,
       ]);
 
       setActiveSemester(semesterResponse.data ?? null);
@@ -181,12 +216,15 @@ export default function RegistrationPage() {
       if (role === "student") {
         setMyRegistrations(ensureArray<RegistrationRecord>(registrationResponse?.data));
         setAllRegistrations([]);
+        setAdminStudents([]);
       } else if (role === "admin") {
         setAllRegistrations(ensureArray<RegistrationRecord>(registrationResponse?.data));
         setMyRegistrations([]);
+        setAdminStudents(ensureArray<StudentRecord>(studentResponse?.data));
       } else {
         setMyRegistrations([]);
         setAllRegistrations([]);
+        setAdminStudents([]);
       }
     } catch (fetchError) {
       if (fetchError instanceof ApiError && fetchError.status === 401) {
@@ -209,8 +247,38 @@ export default function RegistrationPage() {
     void refreshData();
   }, [refreshData, user]);
 
+  useEffect(() => {
+    if (role !== "admin") {
+      setSelectedAdminStudentId("");
+      setSelectedAdminCourseId("");
+      return;
+    }
+
+    if (adminStudents.length > 0 && !adminStudents.some((student) => student._id === selectedAdminStudentId)) {
+      setSelectedAdminStudentId(adminStudents[0]._id);
+    }
+  }, [adminStudents, role, selectedAdminStudentId]);
+
+  useEffect(() => {
+    if (role !== "admin") {
+      return;
+    }
+
+    if (courses.length > 0 && !courses.some((course) => course._id === selectedAdminCourseId)) {
+      setSelectedAdminCourseId(courses[0]._id);
+    }
+  }, [courses, role, selectedAdminCourseId]);
+
   const availableStudentCourses = useMemo(
-    () => courses.filter((course) => isCourseInSemester(course, activeSemester) && course.status === "open"),
+    () =>
+      courses.filter((course) => {
+        if (!isCourseInSemester(course, activeSemester)) {
+          return false;
+        }
+
+        const displayStatus = resolveCourseDisplayStatus(course);
+        return displayStatus !== "closed" && displayStatus !== "planned";
+      }),
     [activeSemester, courses],
   );
 
@@ -224,7 +292,7 @@ export default function RegistrationPage() {
 
   const teacherVisibleCourses = useMemo(() => {
     if (role === "teacher") {
-      return courses.filter((course) => isTeacherCourse(course, user?.id ?? user?.userId));
+      return courses.filter((course) => isTeacherCourse(course, user?.id ?? user?.userId) && isCourseInSemester(course, activeSemester));
     }
 
     if (role === "admin") {
@@ -232,7 +300,7 @@ export default function RegistrationPage() {
     }
 
     return [] as CourseRecord[];
-  }, [courses, role, user?.id, user?.userId]);
+  }, [activeSemester, courses, role, user?.id, user?.userId]);
 
   useEffect(() => {
     if (role !== "teacher" && role !== "admin") {
@@ -367,9 +435,392 @@ export default function RegistrationPage() {
     }
   }
 
+  async function handleAdminEnroll() {
+    if (!selectedAdminStudentId || !selectedAdminCourseId) {
+      setError("Chọn sinh viên và lớp học trước khi chèn vào lớp");
+      return;
+    }
+
+    setAdminEnrollmentLoading(true);
+    setStatusMessage("");
+    setError("");
+
+    try {
+      await apiFetch("/registrations/admin-enroll", {
+        method: "POST",
+        body: JSON.stringify({
+          studentId: selectedAdminStudentId,
+          courseId: selectedAdminCourseId,
+        }),
+      });
+
+      const targetCourse = courses.find((course) => course._id === selectedAdminCourseId);
+      setStatusMessage(`Đã thêm sinh viên vào ${targetCourse?.name ?? "lớp học"}`);
+      await refreshData();
+    } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearAuthToken();
+        router.replace("/login");
+        return;
+      }
+
+      setError(fetchError instanceof Error ? fetchError.message : "Không thể chèn sinh viên vào lớp");
+    } finally {
+      setAdminEnrollmentLoading(false);
+    }
+  }
+
+  async function handleAdminOpenCourse(course: CourseRecord) {
+    setBusyCourseId(course._id);
+    setStatusMessage("");
+    setError("");
+
+    try {
+      await apiFetch(`/courses/${course._id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: "open" }),
+      });
+
+      setStatusMessage(`Đã mở lớp ${course.name}`);
+      await refreshData();
+    } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearAuthToken();
+        router.replace("/login");
+        return;
+      }
+
+      setError(fetchError instanceof Error ? fetchError.message : "Không thể mở lớp học");
+    } finally {
+      setBusyCourseId("");
+    }
+  }
+
+  async function handleAdminCloseCourse(course: CourseRecord) {
+    setBusyCourseId(course._id);
+    setStatusMessage("");
+    setError("");
+
+    try {
+      await apiFetch(`/courses/${course._id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: "closed" }),
+      });
+
+      setStatusMessage(`Đã khóa lớp ${course.name}`);
+      await refreshData();
+    } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearAuthToken();
+        router.replace("/login");
+        return;
+      }
+
+      setError(fetchError instanceof Error ? fetchError.message : "Không thể khóa lớp học");
+    } finally {
+      setBusyCourseId("");
+    }
+  }
+
+  async function handleAdminRemove(registration: RegistrationRecord) {
+    const confirmed = window.confirm(`Xóa sinh viên khỏi lớp ${resolveCourseLabel(registration.courseId)}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setBusyRegistrationId(registration._id);
+    setStatusMessage("");
+    setError("");
+
+    try {
+      await apiFetch(`/registrations/admin/${registration._id}`, {
+        method: "DELETE",
+      });
+
+      setStatusMessage("Đã xóa sinh viên khỏi lớp học");
+      await refreshData();
+    } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearAuthToken();
+        router.replace("/login");
+        return;
+      }
+
+      setError(fetchError instanceof Error ? fetchError.message : "Không thể xóa sinh viên khỏi lớp");
+    } finally {
+      setBusyRegistrationId("");
+    }
+  }
+
+  async function handleExportPdf() {
+    if (role !== "student") {
+      return;
+    }
+
+    setPdfLoading(true);
+
+    try {
+      const studentName = user?.fullName ?? "Sinh viên";
+      const studentCode = user?.userId ?? user?.id ?? "SV";
+      const registeredRows = myRegistrations
+        .filter((registration) => registration.status === "registered")
+        .map((registration) => {
+          const course = typeof registration.courseId === "string" ? null : registration.courseId;
+
+          return [
+            resolveCourseLabel(registration.courseId),
+            course?.courseId ?? "-",
+            formatCreditBreakdown(course ?? undefined),
+            resolveCoursePrice(course),
+            resolveSemesterLabel(registration.semesterId),
+          ];
+        });
+
+      const totalTuition = myRegistrations
+        .filter((registration) => registration.status === "registered")
+        .reduce((sum, registration) => {
+          const course = typeof registration.courseId === "string" ? null : registration.courseId;
+          return sum + (course?.price ?? 0);
+        }, 0);
+
+      const openCourseRows = availableStudentCourses.map((course) => [
+        course.name,
+        course.courseId,
+        formatCreditBreakdown(course),
+        formatCurrency(course.price),
+        `${formatNumber(course.currentStudents)} / ${formatNumber(course.maxStudents)}`,
+        formatStatusLabel(resolveCourseDisplayStatus(course)),
+      ]);
+
+      const docDefinition = {
+        pageSize: "A4",
+        pageOrientation: "landscape",
+        pageMargins: [24, 28, 24, 24],
+        defaultStyle: {
+          font: "Roboto",
+          fontSize: 10,
+          lineHeight: 1.25,
+        },
+        content: [
+          { text: "Danh sách môn đã đăng ký", style: "title" },
+          {
+            columns: [
+              [
+                { text: `Sinh viên: ${studentName}` },
+                { text: `Mã sinh viên: ${studentCode}` },
+                { text: `Ngày xuất: ${formatDateTime(new Date())}` },
+              ],
+            ],
+            margin: [0, 6, 0, 12],
+          },
+          {
+            table: {
+              headerRows: 1,
+              widths: ["*", "auto", "auto", "auto", "*"],
+              body: [
+                [
+                  { text: "Tên môn", style: "tableHeader" },
+                  { text: "Mã môn", style: "tableHeader" },
+                  { text: "Tín chỉ", style: "tableHeader" },
+                  { text: "Giá", style: "tableHeader" },
+                  { text: "Học kỳ", style: "tableHeader" },
+                ],
+                ...(registeredRows.length > 0
+                  ? registeredRows
+                  : [["Chưa có môn đã đăng ký", "-", "-", "-", "-"]]),
+              ],
+            },
+            layout: {
+              fillColor: (rowIndex: number) => (rowIndex === 0 ? "#0f172a" : rowIndex % 2 === 0 ? "#f8fafc" : null),
+              hLineColor: () => "#e2e8f0",
+              vLineColor: () => "#e2e8f0",
+              paddingLeft: () => 6,
+              paddingRight: () => 6,
+              paddingTop: () => 5,
+              paddingBottom: () => 5,
+            },
+            margin: [0, 0, 0, 12],
+          },
+          { text: `Tổng học phí tạm tính: ${formatCurrency(totalTuition)}`, style: "summary" },
+          { text: "Danh sách môn học trong học kỳ", style: "sectionTitle", pageBreak: "before" },
+          {
+            text: `Học kỳ: ${activeSemester?.name ?? "-"}`,
+            margin: [0, 6, 0, 10],
+          },
+          {
+            table: {
+              headerRows: 1,
+              widths: ["*", "auto", "auto", "auto", "auto", "auto"],
+              body: [
+                [
+                  { text: "Tên môn", style: "tableHeader" },
+                  { text: "Mã môn", style: "tableHeader" },
+                  { text: "Tín chỉ", style: "tableHeader" },
+                  { text: "Giá", style: "tableHeader" },
+                  { text: "Sĩ số", style: "tableHeader" },
+                  { text: "Trạng thái", style: "tableHeader" },
+                ],
+                ...(openCourseRows.length > 0
+                  ? openCourseRows
+                  : [["Không có môn học trong học kỳ hiện tại", "-", "-", "-", "-", "-"]]),
+              ],
+            },
+            layout: {
+              fillColor: (rowIndex: number) => (rowIndex === 0 ? "#14532d" : rowIndex % 2 === 0 ? "#f0fdf4" : null),
+              hLineColor: () => "#d1fae5",
+              vLineColor: () => "#d1fae5",
+              paddingLeft: () => 6,
+              paddingRight: () => 6,
+              paddingTop: () => 5,
+              paddingBottom: () => 5,
+            },
+          },
+        ],
+        styles: {
+          title: {
+            fontSize: 18,
+            bold: true,
+            color: "#0f172a",
+            letterSpacing: 0.2,
+          },
+          sectionTitle: {
+            fontSize: 16,
+            bold: true,
+            color: "#0f172a",
+          },
+          summary: {
+            fontSize: 11,
+            bold: true,
+            margin: [0, 2, 0, 0],
+            color: "#0f172a",
+          },
+          tableHeader: {
+            bold: true,
+            color: "#ffffff",
+            fillColor: "#0f172a",
+          },
+        },
+        footer: (currentPage: number, pageCount: number) => ({
+          text: `${currentPage} / ${pageCount}`,
+          alignment: "right",
+          margin: [24, 0, 24, 12],
+          fontSize: 9,
+          color: "#64748b",
+        }),
+      };
+
+      await pdfMake.createPdf(docDefinition).download(`dang-ky-mon-hoc-${studentCode}.pdf`);
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError.message : "Không thể xuất file PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
+  function handleExportRosterPdf() {
+    if (!selectedRoster?.course) {
+      return;
+    }
+
+    const course = selectedRoster.course;
+    const courseCode = course.courseId ?? course._id ?? "lop-hoc";
+    const teacherName = resolveTeacherLabel(course.teacherId);
+    const semesterName = resolveSemesterLabel(course.semesterId);
+
+    const rosterRows = selectedRoster.registrations.map((registration) => {
+      const student = typeof registration.studentId === "string" ? null : registration.studentId;
+
+      return [
+        resolveStudentKey(registration.studentId) || "-",
+        resolveStudentLabel(registration.studentId),
+        student?.email || "-",
+        student?.phone || "-",
+        student?.department || "-",
+        student?.academicYear || "-",
+        formatDateTime(registration.createdAt),
+      ];
+    });
+
+    const docDefinition = {
+      pageSize: "A4",
+      pageOrientation: "landscape",
+      pageMargins: [24, 28, 24, 24],
+      defaultStyle: {
+        font: "Roboto",
+        fontSize: 10,
+        lineHeight: 1.25,
+      },
+      content: [
+        { text: "Danh sách sinh viên lớp học", style: "title" },
+        {
+          columns: [
+            [
+              { text: `Môn học: ${course.name}` },
+              { text: `Mã lớp: ${courseCode}` },
+              { text: `Giảng viên: ${teacherName}` },
+              { text: `Học kỳ: ${semesterName}` },
+              { text: `Tổng sinh viên: ${formatNumber(selectedRoster.total)}` },
+              { text: `Ngày xuất: ${formatDateTime(new Date())}` },
+            ],
+          ],
+          margin: [0, 6, 0, 12],
+        },
+        {
+          table: {
+            headerRows: 1,
+            widths: ["auto", "*", "*", "auto", "*", "auto", "auto"],
+            body: [
+              [
+                { text: "Mã SV", style: "tableHeader" },
+                { text: "Họ tên", style: "tableHeader" },
+                { text: "Email", style: "tableHeader" },
+                { text: "SĐT", style: "tableHeader" },
+                { text: "Khoa", style: "tableHeader" },
+                { text: "Niên khóa", style: "tableHeader" },
+                { text: "Ngày đăng ký", style: "tableHeader" },
+              ],
+              ...(rosterRows.length > 0 ? rosterRows : [["-", "Chưa có sinh viên", "-", "-", "-", "-", "-"]]),
+            ],
+          },
+          layout: {
+            fillColor: (rowIndex: number) => (rowIndex === 0 ? "#0f172a" : rowIndex % 2 === 0 ? "#f8fafc" : null),
+            hLineColor: () => "#e2e8f0",
+            vLineColor: () => "#e2e8f0",
+            paddingLeft: () => 6,
+            paddingRight: () => 6,
+            paddingTop: () => 5,
+            paddingBottom: () => 5,
+          },
+        },
+      ],
+      styles: {
+        title: {
+          fontSize: 18,
+          bold: true,
+          color: "#0f172a",
+          letterSpacing: 0.2,
+        },
+        tableHeader: {
+          bold: true,
+          color: "#ffffff",
+          fillColor: "#0f172a",
+        },
+      },
+      footer: (currentPage: number, pageCount: number) => ({
+        text: `${currentPage} / ${pageCount}`,
+        alignment: "right",
+        margin: [24, 0, 24, 12],
+        fontSize: 9,
+        color: "#64748b",
+      }),
+    };
+
+    pdfMake.createPdf(docDefinition).download(`danh-sach-sinh-vien-${courseCode}.pdf`);
+  }
+
   const studentSummaryCards = [
     {
-      label: "Môn có thể đăng ký",
+      label: "Môn trong học kỳ",
       value: availableStudentCourses.length,
       color: "bg-muted/50",
     },
@@ -387,7 +838,7 @@ export default function RegistrationPage() {
 
   const rosterSummaryCards = [
     {
-      label: "Lớp đang xem",
+      label: "Lớp học kỳ này",
       value: teacherVisibleCourses.length,
       color: "bg-muted/50",
     },
@@ -449,6 +900,155 @@ export default function RegistrationPage() {
         </div>
       ) : null}
 
+      {role === "admin" ? (
+        <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Quản trị</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">Quản lý lớp học</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Admin có thể thêm sinh viên vào lớp, đồng thời khóa hoặc mở lại lớp đang mở, lớp đã đầy, hoặc lớp đã đóng.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_auto]">
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-foreground">Sinh viên</span>
+              <select
+                value={selectedAdminStudentId}
+                onChange={(event) => setSelectedAdminStudentId(event.target.value)}
+                className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                disabled={adminEnrollmentLoading || adminStudents.length === 0}
+              >
+                {adminStudents.length > 0 ? (
+                  adminStudents.map((student) => (
+                    <option key={student._id} value={student._id}>
+                      {student.fullName || student.userId || student.email}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Không có sinh viên</option>
+                )}
+              </select>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-foreground">Lớp học</span>
+              <select
+                value={selectedAdminCourseId}
+                onChange={(event) => setSelectedAdminCourseId(event.target.value)}
+                className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                disabled={adminEnrollmentLoading || courses.length === 0}
+              >
+                {courses.length > 0 ? (
+                  courses.map((course) => (
+                    <option key={course._id} value={course._id}>
+                      {course.name} · {course.courseId} · {formatNumber(course.currentStudents)}/{formatNumber(course.maxStudents)} · {formatStatusLabel(resolveCourseDisplayStatus(course))}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Không có lớp học</option>
+                )}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => void handleAdminEnroll()}
+              disabled={adminEnrollmentLoading || adminStudents.length === 0 || courses.length === 0}
+              className={cn(
+                "inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition",
+                adminEnrollmentLoading || adminStudents.length === 0 || courses.length === 0
+                  ? "cursor-not-allowed bg-muted text-muted-foreground"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90",
+              )}
+            >
+              <UserPlus className="h-4 w-4" />
+              {adminEnrollmentLoading ? "Đang chèn..." : "Thêm sinh viên"}
+            </button>
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-border bg-muted/30 p-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Khóa học đang chọn</p>
+                <h3 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+                  {courses.find((course) => course._id === selectedAdminCourseId)?.name ?? "Chưa chọn lớp"}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {courses.find((course) => course._id === selectedAdminCourseId)?.courseId ?? "-"}
+                </p>
+              </div>
+
+              {courses.find((course) => course._id === selectedAdminCourseId) ? (
+                <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courses.find((course) => course._id === selectedAdminCourseId) ? (courses.find((course) => course._id === selectedAdminCourseId)!.status === "full" ? "bg-destructive/10 text-destructive border-destructive/20" : courses.find((course) => course._id === selectedAdminCourseId)!.status === "closed" || courses.find((course) => course._id === selectedAdminCourseId)!.status === "planned" ? "bg-muted text-muted-foreground border-border" : "bg-emerald-500/10 text-emerald-700 border-emerald-200/60 dark:text-emerald-300 dark:border-emerald-500/20") : "bg-muted text-muted-foreground border-border")}>{formatStatusLabel(courses.find((course) => course._id === selectedAdminCourseId)?.status)}</span>
+              ) : null}
+            </div>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_auto_auto]">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-foreground">Chọn lớp để thao tác</span>
+                <select
+                  value={selectedAdminCourseId}
+                  onChange={(event) => setSelectedAdminCourseId(event.target.value)}
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                  disabled={courses.length === 0}
+                >
+                  {courses.length > 0 ? (
+                    courses.map((course) => (
+                      <option key={course._id} value={course._id}>
+                        {course.name} · {course.courseId} · {formatNumber(course.currentStudents)}/{formatNumber(course.maxStudents)} · {formatStatusLabel(course.status)}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Không có lớp học</option>
+                  )}
+                </select>
+              </label>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const selectedCourse = courses.find((course) => course._id === selectedAdminCourseId);
+                  if (selectedCourse) {
+                    void handleAdminOpenCourse(selectedCourse);
+                  }
+                }}
+                disabled={!selectedAdminCourseId || busyCourseId === selectedAdminCourseId}
+                className={cn(
+                  "inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition",
+                  !selectedAdminCourseId || busyCourseId === selectedAdminCourseId
+                    ? "cursor-not-allowed bg-muted text-muted-foreground"
+                    : "bg-emerald-600 text-white hover:bg-emerald-500",
+                )}
+              >
+                Mở lớp
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const selectedCourse = courses.find((course) => course._id === selectedAdminCourseId);
+                  if (selectedCourse) {
+                    void handleAdminCloseCourse(selectedCourse);
+                  }
+                }}
+                disabled={!selectedAdminCourseId || busyCourseId === selectedAdminCourseId}
+                className={cn(
+                  "inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition",
+                  !selectedAdminCourseId || busyCourseId === selectedAdminCourseId
+                    ? "cursor-not-allowed bg-muted text-muted-foreground"
+                    : "bg-amber-600 text-white hover:bg-amber-500",
+                )}
+              >
+                Khóa lớp
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {role === "student" ? (
         <>
           <section className="grid gap-4 md:grid-cols-3">
@@ -461,16 +1061,31 @@ export default function RegistrationPage() {
           </section>
 
           <section className="space-y-3">
-            <div className="flex items-center gap-2 text-foreground">
-              <BookOpen className="h-4 w-4" />
-              <h2 className="text-lg font-semibold text-foreground">Môn học có thể đăng ký</h2>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-2 text-foreground">
+                <BookOpen className="h-4 w-4" />
+                <h2 className="text-lg font-semibold text-foreground">Môn học có thể đăng ký</h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handleExportPdf()}
+                disabled={pdfLoading}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                  pdfLoading ? "cursor-not-allowed bg-muted text-muted-foreground" : "bg-slate-900 text-white hover:bg-slate-800",
+                )}
+              >
+                <Download className="h-4 w-4" />
+                {pdfLoading ? "Đang xuất..." : "Xuất PDF"}
+              </button>
             </div>
             <ResourceTable
               loading={pageLoading}
               error={null}
               rows={availableStudentCourses}
               rowKey={(course) => course._id}
-              emptyMessage="Không có môn học nào đang mở trong học kỳ hiện tại."
+              emptyMessage="Không có môn học nào trong học kỳ hiện tại."
               columns={[
                 {
                   header: "Môn học",
@@ -495,6 +1110,10 @@ export default function RegistrationPage() {
                   render: (course) => <span className="text-foreground">{formatScheduleText(course.schedule)}</span>,
                 },
                 {
+                  header: "Giá",
+                  render: (course) => <span className="font-medium text-foreground">{formatCurrency(course.price)}</span>,
+                },
+                {
                   header: "Sĩ số",
                   render: (course) => (
                     <div className="space-y-1">
@@ -510,8 +1129,8 @@ export default function RegistrationPage() {
                 {
                   header: "Trạng thái",
                   render: (course) => (
-                    <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(course.status))}>
-                      {formatStatusLabel(course.status)}
+                    <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(resolveCourseDisplayStatus(course)))}>
+                      {formatStatusLabel(resolveCourseDisplayStatus(course))}
                     </span>
                   ),
                 },
@@ -519,8 +1138,8 @@ export default function RegistrationPage() {
                   header: "Hành động",
                   render: (course) => {
                     const alreadyRegistered = courseIdsRegisteredByStudent.has(course._id);
-                    const isFull = course.currentStudents >= course.maxStudents;
-                    const disabled = alreadyRegistered || isFull || busyCourseId === course._id || !activeSemester;
+                    const displayStatus = resolveCourseDisplayStatus(course);
+                    const disabled = alreadyRegistered || displayStatus !== "open" || busyCourseId === course._id || !activeSemester;
 
                     return (
                       <button
@@ -537,7 +1156,15 @@ export default function RegistrationPage() {
                         {busyCourseId === course._id ? (
                           <RotateCcw className="h-3.5 w-3.5 animate-spin" />
                         ) : null}
-                        {alreadyRegistered ? "Đã đăng ký" : isFull ? "Đã đầy" : "Đăng ký"}
+                        {alreadyRegistered
+                          ? "Đã đăng ký"
+                          : displayStatus === "open"
+                            ? "Đăng ký"
+                            : displayStatus === "full"
+                              ? "Đã đầy"
+                              : displayStatus === "ongoing"
+                                ? "Đã học"
+                                : formatStatusLabel(displayStatus)}
                       </button>
                     );
                   },
@@ -570,6 +1197,14 @@ export default function RegistrationPage() {
                 {
                   header: "Học kỳ",
                   render: (registration) => <span className="text-foreground">{resolveSemesterLabel(registration.semesterId)}</span>,
+                },
+                {
+                  header: "Giá",
+                  render: (registration) => (
+                    <span className="font-medium text-foreground">
+                      {typeof registration.courseId === "string" ? "-" : resolveCoursePrice(registration.courseId)}
+                    </span>
+                  ),
                 },
                 {
                   header: "Trạng thái",
@@ -652,6 +1287,10 @@ export default function RegistrationPage() {
                   render: (course) => <span className="text-foreground">{resolveSemesterLabel(course.semesterId)}</span>,
                 },
                 {
+                  header: "Giá",
+                  render: (course) => <span className="font-medium text-foreground">{formatCurrency(course.price)}</span>,
+                },
+                {
                   header: "Sĩ số",
                   render: (course) => (
                     <div className="space-y-1">
@@ -667,8 +1306,8 @@ export default function RegistrationPage() {
                 {
                   header: "Trạng thái",
                   render: (course) => (
-                    <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(course.status))}>
-                      {formatStatusLabel(course.status)}
+                    <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(resolveCourseDisplayStatus(course)))}>
+                      {formatStatusLabel(resolveCourseDisplayStatus(course))}
                     </span>
                   ),
                 },
@@ -699,10 +1338,21 @@ export default function RegistrationPage() {
               </div>
 
               {selectedRoster?.course ? (
-                <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Tổng sinh viên</p>
-                  <p className="mt-1 font-semibold">{formatNumber(selectedRoster.total)}</p>
-                  <p className="text-xs text-muted-foreground">{formatNumber(selectedRoster.course.currentStudents)} đã ghi trong khóa học</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Tổng sinh viên</p>
+                    <p className="mt-1 font-semibold">{formatNumber(selectedRoster.total)}</p>
+                    <p className="text-xs text-muted-foreground">{formatNumber(selectedRoster.course.currentStudents)} đã ghi trong khóa học</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleExportRosterPdf}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    <Download className="h-4 w-4" />
+                    Xuất danh sách
+                  </button>
                 </div>
               ) : null}
             </div>
@@ -814,6 +1464,31 @@ export default function RegistrationPage() {
               {
                 header: "Ngày tạo",
                 render: (registration) => formatDateTime(registration.createdAt),
+              },
+              {
+                header: "Hành động",
+                render: (registration) => {
+                  const canRemove = registration.status === "registered";
+
+                  return canRemove ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleAdminRemove(registration)}
+                      disabled={busyRegistrationId === registration._id}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                        busyRegistrationId === registration._id
+                          ? "cursor-not-allowed bg-muted text-muted-foreground"
+                          : "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                      )}
+                    >
+                      {busyRegistrationId === registration._id ? <RotateCcw className="h-3.5 w-3.5 animate-spin" /> : null}
+                      Xóa khỏi lớp
+                    </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Không áp dụng</span>
+                  );
+                },
               },
             ]}
           />

@@ -9,8 +9,8 @@ exports.stats = async (req, res, next) => {
 
     if (req.user.role === 'student') {
       const registeredRegistrations = await Registration.find({ studentId: req.user._id, status: 'registered' })
-        .populate('courseId', 'courseId name teacherId semesterId schedule maxStudents currentStudents status')
-        .populate('semesterId', 'semesterId name status')
+        .populate('courseId', 'courseId name teacherId semesterId schedule maxStudents currentStudents status price')
+        .populate('semesterId', 'semesterId name status startDate endDate registrationStart registrationEnd')
         .sort({ createdAt: -1 })
         .lean();
 
@@ -30,8 +30,13 @@ exports.stats = async (req, res, next) => {
     }
 
     if (req.user.role === 'teacher') {
-      const courses = await Course.find({ teacherId: req.user._id })
-        .populate('semesterId', 'semesterId name status')
+      const teacherCourseFilter = { teacherId: req.user._id };
+      if (activeSemester?._id) {
+        teacherCourseFilter.semesterId = activeSemester._id;
+      }
+
+      const courses = await Course.find(teacherCourseFilter)
+        .populate('semesterId', 'semesterId name status startDate endDate registrationStart registrationEnd')
         .sort({ createdAt: -1 })
         .lean();
 

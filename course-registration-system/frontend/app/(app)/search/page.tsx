@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { Search, Users, GraduationCap, BookOpen } from "lucide-react";
 
 import { ResourceTable } from "@/components/app/ResourceTable";
+import { useAuth } from "@/components/layout/AuthProvider";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
-import { formatNumber, formatScheduleText, formatStatusLabel } from "@/lib/format";
+import { formatCurrency, formatNumber, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus } from "@/lib/format";
 import { ensureArray } from "@/lib/utils";
 import type { CourseRecord, StudentRecord, TeacherRecord } from "@/lib/types";
 
@@ -16,12 +17,19 @@ function includesQuery(value: unknown, query: string) {
 
 export default function SearchPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [teachers, setTeachers] = useState<TeacherRecord[]>([]);
   const [courses, setCourses] = useState<CourseRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      router.replace("/dashboard");
+    }
+  }, [router, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +109,10 @@ export default function SearchPage() {
       ),
     [courses, normalizedQuery],
   );
+
+  if (user && user.role !== "admin") {
+    return <div className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-sm">Đang chuyển hướng về bảng điều khiển...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -194,7 +206,8 @@ export default function SearchPage() {
             { header: "Mã học phần", render: (course) => course.courseId },
             { header: "Name", render: (course) => course.name },
             { header: "Lịch học", render: (course) => formatScheduleText(course.schedule) },
-            { header: "Trạng thái", render: (course) => formatStatusLabel(course.status) },
+            { header: "Giá", render: (course) => formatCurrency(course.price) },
+            { header: "Trạng thái", render: (course) => formatStatusLabel(resolveCourseDisplayStatus(course)) },
           ]}
         />
       </section>

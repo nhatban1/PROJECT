@@ -106,9 +106,9 @@ npm run start
 Sau khi nạp dữ liệu mẫu, có thể dùng các tài khoản sau. / After seeding demo data, use these accounts:
 
 - Admin: `Admin@iuh.edu.vn` / `AD001`
-- Giảng viên / Teachers: `gv001@iuh.edu.vn` đến `gv078@iuh.edu.vn`, mật khẩu trùng với mã `GV001`...`GV078`. / Password matches the ID code.
-- Sinh viên / Students: `sv001@iuh.edu.vn` đến `sv010@iuh.edu.vn`, mật khẩu trùng với mã `SV001`...`SV010`. / Password matches the ID code.
-- Các `userId` được tạo theo thứ tự: `AD001`, `GV001`... `GV078`, `SV001`... `SV010`.
+- Giảng viên / Teachers: `gv001@iuh.edu.vn` đến `gv010@iuh.edu.vn`, mật khẩu trùng với mã `GV001`...`GV010`. / Password matches the ID code.
+- Sinh viên / Students: `sv001@iuh.edu.vn` đến `sv012@iuh.edu.vn`, mật khẩu trùng với mã `SV001`...`SV012`. / Password matches the ID code.
+- Các `userId` được tạo theo thứ tự: `AD001`, `GV001`... `GV010`, `SV001`... `SV012`.
 
 ## Cách test website / How to test
 

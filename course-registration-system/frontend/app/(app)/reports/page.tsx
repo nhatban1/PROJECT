@@ -5,17 +5,22 @@ import { useRouter } from "next/navigation";
 import { BarChart3, BookOpenCheck, ShieldCheck } from "lucide-react";
 
 import { ResourceTable } from "@/components/app/ResourceTable";
+import { useAuth } from "@/components/layout/AuthProvider";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
 import { cn, ensureArray } from "@/lib/utils";
-import { formatNumber, formatStatusLabel } from "@/lib/format";
+import { formatCurrency, formatNumber, formatStatusLabel, resolveCourseDisplayStatus } from "@/lib/format";
 import type { CourseRecord, DashboardStats, RegistrationRecord } from "@/lib/types";
 
-function courseStatusClass(status: CourseRecord["status"]) {
+function courseStatusClass(status: string) {
   if (status === "full") {
     return "bg-destructive/10 text-destructive border-destructive/20";
   }
 
-  if (status === "closed") {
+  if (status === "ongoing") {
+    return "bg-sky-500/10 text-sky-700 border-sky-200/60 dark:text-sky-300 dark:border-sky-500/20";
+  }
+
+  if (status === "closed" || status === "planned") {
     return "bg-muted text-muted-foreground border-border";
   }
 
@@ -40,11 +45,18 @@ function resolveStudentTitle(value: RegistrationRecord["studentId"]) {
 
 export default function ReportsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [courses, setCourses] = useState<CourseRecord[]>([]);
   const [registrations, setRegistrations] = useState<RegistrationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      router.replace("/dashboard");
+    }
+  }, [router, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,9 +107,12 @@ export default function ReportsPage() {
 
   const statusBreakdown = useMemo(() => {
     return {
-      open: courses.filter((course) => course.status === "open").length,
-      full: courses.filter((course) => course.status === "full").length,
-      closed: courses.filter((course) => course.status === "closed").length,
+      open: courses.filter((course) => resolveCourseDisplayStatus(course) === "open").length,
+      full: courses.filter((course) => resolveCourseDisplayStatus(course) === "full").length,
+      closed: courses.filter((course) => {
+        const displayStatus = resolveCourseDisplayStatus(course);
+        return displayStatus === "closed" || displayStatus === "planned";
+      }).length,
     };
   }, [courses]);
 
@@ -106,6 +121,10 @@ export default function ReportsPage() {
       .sort((left, right) => (right.currentStudents / Math.max(right.maxStudents || 1, 1)) - (left.currentStudents / Math.max(left.maxStudents || 1, 1)))
       .slice(0, 5);
   }, [courses]);
+
+  if (user && user.role !== "admin") {
+    return <div className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-sm">Đang chuyển hướng về bảng điều khiển...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -188,13 +207,14 @@ export default function ReportsPage() {
             emptyMessage="Không có dữ liệu khóa học."
             columns={[
               { header: "Khóa học", render: (course) => course.name },
+              { header: "Giá", render: (course) => formatCurrency(course.price) },
               {
                 header: "Mức sử dụng",
                 render: (course) => `${course.currentStudents}/${course.maxStudents}`,
               },
               {
                 header: "Trạng thái",
-                render: (course) => <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(course.status))}>{formatStatusLabel(course.status)}</span>,
+                render: (course) => <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(resolveCourseDisplayStatus(course)))}>{formatStatusLabel(resolveCourseDisplayStatus(course))}</span>,
               },
             ]}
           />

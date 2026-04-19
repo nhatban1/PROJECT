@@ -7,115 +7,24 @@ const Course = require("../models/Course");
 const Registration = require("../models/Registration");
 const Notification = require("../models/Notification");
 
-const teacherGroups = [
-  {
-    department: "Kỹ thuật phần mềm",
-    teachers: [
-      "ThS. Phạm Quảng Tri",
-      "TS. Tôn Long Phước",
-      "TS. Nguyễn Thị Hạnh (Trưởng bộ môn)",
-      "ThS. Bùi Đình Tiền",
-      "ThS. Châu Thị Bảo Hà",
-      "TS. Nguyễn Minh Hải",
-      "ThS. Nguyễn Thị Hoàng Khánh",
-      "ThS. Nguyễn Thị Hồng Lương",
-      "TS. Nguyễn Trọng Tiến",
-      "ThS. Nguyễn Văn Thắng",
-      "TS. Nguyễn Vũ Lâm",
-      "TS. Nguyễn Đình Quyền",
-      "ThS. Phạm Thanh Hùng",
-      "ThS. Trần Thế Trung",
-      "ThS. Trần Thị Anh Thi",
-      "ThS. Đặng Thị Thu Hà (Phó bộ môn)",
-      "ThS. Đặng Văn Thuận"
-    ]
-  },
-  {
-    department: "Khoa học máy tính",
-    teachers: [
-      "TS. Lê Nhật Duy (Trưởng khoa)",
-      "TS. Hồ Đắc Quán (Trưởng bộ môn)",
-      "TS. Phạm Thị Thiết (Phó bộ môn)",
-      "TS. Phạm Văn Chung",
-      "PGS.TS Huỳnh Tường Nguyên (Phó trưởng Khoa)",
-      "TS. Đặng Thị Phúc (Phó trưởng Khoa)",
-      "ThS. Bùi Công Danh",
-      "ThS. Giảng Thanh Trọn (Tổ trưởng tổ kỹ thuật)",
-      "TS. Lê Thị Vĩnh Thanh",
-      "ThS. Lê Vũ Hạo (NCS)",
-      "TS. Lê Đình Long",
-      "ThS. Nguyễn Ngọc Lễ (NCS)",
-      "TS. Nguyễn Thanh Chuyên",
-      "TS. Nguyễn Tiến Thịnh",
-      "ThS. Võ Quang Hoàng Khang",
-      "TS. Võ Đăng Khoa",
-      "TS. Đoàn Văn Thắng"
-    ]
-  },
-  {
-    department: "Công nghệ thông tin",
-    teachers: [
-      "TS. Tạ Duy Công Chiến (Trưởng bộ môn)",
-      "TS. Trần Thị Minh Khoa",
-      "ThS. Hoàng Đình Hạnh",
-      "TS. Lê Thị Thủy",
-      "ThS. NCS. Võ Công Minh (Phó bộ môn)",
-      "ThS. Nguyễn Thành Thái (NCS)",
-      "ThS. Nguyễn Văn Quang",
-      "ThS. Nguyễn Xuân Lô",
-      "ThS. Phạm Thái Khanh",
-      "ThS. Trương Bá Phúc",
-      "TS. Đặng Thanh Bình",
-      "ThS. Đỗ Hà Phương"
-    ]
-  },
-  {
-    department: "Hệ thống thông tin",
-    teachers: [
-      "ThS. Trần Thị Kim Chi (Phó bộ môn)",
-      "ThS. Nguyễn Phúc Hưng (NCS)",
-      "TS. Ngô Hữu Dũng (Trưởng bộ môn)",
-      "ThS. Bùi Văn Đồng",
-      "ThS. Huỳnh Nam (NCS)",
-      "ThS. Huỳnh Tấn Hát",
-      "ThS. Lê Thị Ánh Tuyết",
-      "ThS. Lê Thùy Trang",
-      "ThS. Lê Trọng Hiền (NCS)",
-      "ThS. Nguyễn Hữu Quang (NCS)",
-      "ThS. Nguyễn Ngọc Dung",
-      "TS. Nguyễn Tấn Hoàng",
-      "ThS. Nguyễn Thị Thanh Bình",
-      "ThS. Nguyễn Trần Kỹ",
-      "ThS. Phạm Thị Xuân Hiền",
-      "ThS. Phan Thị Bảo Trân",
-      "ThS. Võ Ngọc Tấn Phước"
-    ]
-  },
-  {
-    department: "Khoa học dữ liệu",
-    teachers: [
-      "GS.TS. Huỳnh Trung Hiếu",
-      "TS. Lê Trọng Ngọc (PGĐ trung tâm NN - TH)",
-      "TS. Bùi Thanh Hùng (TTCĐ) (Trưởng bộ môn)",
-      "ThS. Nguyễn Hữu Tình (Phó bộ môn)",
-      "TS. Huỳnh Công Bằng",
-      "PGS.TS Nguyễn Hòa",
-      "TS. Nguyễn Hữu Vũ",
-      "TS. Nguyễn Lê Linh",
-      "TS. Nguyễn Minh Hạnh",
-      "TS. Phan Hồng Tín",
-      "ThS. Trần Nhật Hoàng Anh",
-      "KS. Trần Tấn Thành",
-      "TS. Trịnh Thanh Sơn",
-      "ThS. Trương Vĩnh Linh",
-      "TS. Vũ Đức Thịnh"
-    ]
-  }
+const PRICE_PER_CREDIT = 750000;
+const teacherRoster = [
+  { department: "Kỹ thuật phần mềm", fullName: "ThS. Phạm Quảng Tri" },
+  { department: "Kỹ thuật phần mềm", fullName: "TS. Tôn Long Phước" },
+  { department: "Kỹ thuật phần mềm", fullName: "TS. Nguyễn Thị Hạnh (Trưởng bộ môn)" },
+  { department: "Kỹ thuật phần mềm", fullName: "ThS. Bùi Đình Tiền" },
+  { department: "Kỹ thuật phần mềm", fullName: "ThS. Châu Thị Bảo Hà" },
+  { department: "Khoa học máy tính", fullName: "TS. Lê Nhật Duy (Trưởng khoa)" },
+  { department: "Khoa học máy tính", fullName: "TS. Hồ Đắc Quán (Trưởng bộ môn)" },
+  { department: "Khoa học máy tính", fullName: "TS. Phạm Thị Thiết (Phó bộ môn)" },
+  { department: "Công nghệ thông tin", fullName: "TS. Tạ Duy Công Chiến (Trưởng bộ môn)" },
+  { department: "Công nghệ thông tin", fullName: "TS. Trần Thị Minh Khoa" }
 ];
 
 const pad = (value) => String(value).padStart(3, "0");
 const buildEmail = (code) => `${code.toLowerCase()}@iuh.edu.vn`;
 const studentDepartment = "Công nghệ thông tin";
+const daysAgo = (days) => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
 function generateRandomPhone(usedPhones) {
   let phoneNumber = "";
@@ -150,35 +59,35 @@ const seed = async () => {
   const teacherSeeds = [];
   const teacherUserSeeds = [];
   let teacherIndex = 1;
+  const usedTeacherPhones = new Set();
   const usedStudentPhones = new Set();
 
-  for (const group of teacherGroups) {
-    for (const fullName of group.teachers) {
-      const teacherCode = `GV${pad(teacherIndex)}`;
-      const email = buildEmail(teacherCode);
+  for (const teacher of teacherRoster) {
+    const teacherCode = `GV${pad(teacherIndex)}`;
+    const email = buildEmail(teacherCode);
 
-      teacherSeeds.push({
-        _id: teacherCode,
-        teacherId: teacherCode,
-        fullName,
-        department: group.department
-      });
+    teacherSeeds.push({
+      _id: teacherCode,
+      teacherId: teacherCode,
+      fullName: teacher.fullName,
+      department: teacher.department
+    });
 
-      teacherUserSeeds.push({
-        _id: teacherCode,
-        userId: teacherCode,
-        email,
-        password: teacherCode,
-        fullName,
-        department: group.department,
-        role: "teacher"
-      });
+    teacherUserSeeds.push({
+      _id: teacherCode,
+      userId: teacherCode,
+      email,
+      password: teacherCode,
+      fullName: teacher.fullName,
+      phone: generateRandomPhone(usedTeacherPhones),
+      department: teacher.department,
+      role: "teacher"
+    });
 
-      teacherIndex += 1;
-    }
+    teacherIndex += 1;
   }
 
-  const studentUserSeeds = Array.from({ length: 10 }, (_, index) => {
+  const studentUserSeeds = Array.from({ length: 12 }, (_, index) => {
     const studentNumber = index + 1;
     const studentCode = `SV${pad(studentNumber)}`;
     const email = buildEmail(studentCode);
@@ -227,6 +136,28 @@ const seed = async () => {
       registrationEnd: new Date("2026-07-30"),
       maxCredits: 24,
       status: "planned"
+    },
+    {
+      _id: "HK003",
+      semesterId: "HK003",
+      name: "Học kỳ 2 - 2025",
+      startDate: new Date("2025-08-01"),
+      endDate: new Date("2025-12-15"),
+      registrationStart: new Date("2025-07-15"),
+      registrationEnd: new Date("2025-07-30"),
+      maxCredits: 24,
+      status: "closed"
+    },
+    {
+      _id: "HK004",
+      semesterId: "HK004",
+      name: "Học kỳ 1 - 2025",
+      startDate: new Date("2025-01-10"),
+      endDate: new Date("2025-05-15"),
+      registrationStart: new Date("2024-12-20"),
+      registrationEnd: new Date("2025-01-05"),
+      maxCredits: 24,
+      status: "closed"
     }
   ]);
 
@@ -238,12 +169,14 @@ const seed = async () => {
       department: "Kỹ thuật phần mềm",
       description: "Tổng quan về quy trình phát triển và quản lý phần mềm.",
       credits: 3,
+      price: 1200000,
+      fullAt: daysAgo(10),
       teacherId: teacherById.GV001._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 2, startPeriod: 1, endPeriod: 3, room: "A101" },
-      maxStudents: 40,
-      currentStudents: 0,
-      status: "open"
+      maxStudents: 10,
+      currentStudents: 10,
+      status: "full"
     },
     {
       _id: "MH002",
@@ -252,11 +185,14 @@ const seed = async () => {
       department: "Khoa học máy tính",
       description: "Các cấu trúc dữ liệu nền tảng và giải thuật cơ bản.",
       credits: 3,
-      teacherId: teacherById.GV001._id,
+      price: 1200000,
+      theoryCredits: 2,
+      practiceCredits: 1,
+      teacherId: teacherById.GV002._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 3, startPeriod: 1, endPeriod: 3, room: "B201" },
-      maxStudents: 35,
-      currentStudents: 0,
+      maxStudents: 10,
+      currentStudents: 1,
       status: "open"
     },
     {
@@ -266,11 +202,14 @@ const seed = async () => {
       department: "Công nghệ thông tin",
       description: "Kiến thức nhập môn về mạng máy tính và truyền thông dữ liệu.",
       credits: 3,
-      teacherId: teacherById.GV002._id,
+      price: 1200000,
+      theoryCredits: 2,
+      practiceCredits: 1,
+      teacherId: teacherById.GV003._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 4, startPeriod: 2, endPeriod: 4, room: "C301" },
-      maxStudents: 40,
-      currentStudents: 0,
+      maxStudents: 10,
+      currentStudents: 1,
       status: "open"
     },
     {
@@ -280,10 +219,11 @@ const seed = async () => {
       department: "Hệ thống thông tin",
       description: "Thiết kế, truy vấn và vận hành hệ quản trị cơ sở dữ liệu.",
       credits: 3,
-      teacherId: teacherById.GV002._id,
+      price: 1200000,
+      teacherId: teacherById.GV004._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 5, startPeriod: 1, endPeriod: 3, room: "D401" },
-      maxStudents: 40,
+      maxStudents: 10,
       currentStudents: 0,
       status: "open"
     },
@@ -294,10 +234,11 @@ const seed = async () => {
       department: "Khoa học dữ liệu",
       description: "Cách thu thập, xử lý và phân tích dữ liệu ở mức nhập môn.",
       credits: 3,
-      teacherId: teacherById.GV003._id,
+      price: 1200000,
+      teacherId: teacherById.GV005._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 6, startPeriod: 1, endPeriod: 3, room: "E501" },
-      maxStudents: 40,
+      maxStudents: 10,
       currentStudents: 0,
       status: "open"
     },
@@ -308,10 +249,13 @@ const seed = async () => {
       department: "Công nghệ thông tin",
       description: "Tư duy thiết kế phần mềm theo hướng đối tượng và thực hành OOP.",
       credits: 3,
-      teacherId: teacherById.GV003._id,
+      price: 1200000,
+      theoryCredits: 2,
+      practiceCredits: 1,
+      teacherId: teacherById.GV006._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 2, startPeriod: 4, endPeriod: 6, room: "C302" },
-      maxStudents: 40,
+      maxStudents: 10,
       currentStudents: 0,
       status: "open"
     },
@@ -322,10 +266,11 @@ const seed = async () => {
       department: "Công nghệ thông tin",
       description: "Thiết kế, truy vấn và quản trị cơ sở dữ liệu quan hệ.",
       credits: 3,
-      teacherId: teacherById.GV004._id,
+      price: 1200000,
+      teacherId: teacherById.GV007._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 3, startPeriod: 4, endPeriod: 6, room: "C303" },
-      maxStudents: 40,
+      maxStudents: 10,
       currentStudents: 0,
       status: "open"
     },
@@ -336,10 +281,13 @@ const seed = async () => {
       department: "Công nghệ thông tin",
       description: "Phân tích yêu cầu và mô hình hóa hệ thống phần mềm.",
       credits: 3,
-      teacherId: teacherById.GV004._id,
+      price: 1200000,
+      theoryCredits: 2,
+      practiceCredits: 1,
+      teacherId: teacherById.GV008._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 4, startPeriod: 4, endPeriod: 6, room: "C304" },
-      maxStudents: 40,
+      maxStudents: 10,
       currentStudents: 0,
       status: "open"
     },
@@ -350,10 +298,11 @@ const seed = async () => {
       department: "Công nghệ thông tin",
       description: "Các nguyên tắc cơ bản về an toàn, bảo mật và phòng vệ hệ thống.",
       credits: 3,
-      teacherId: teacherById.GV005._id,
+      price: 1200000,
+      teacherId: teacherById.GV009._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 5, startPeriod: 1, endPeriod: 3, room: "C305" },
-      maxStudents: 40,
+      maxStudents: 10,
       currentStudents: 0,
       status: "open"
     },
@@ -364,14 +313,23 @@ const seed = async () => {
       department: "Công nghệ thông tin",
       description: "Mô hình mạng, định tuyến và các khái niệm nâng cao trong mạng.",
       credits: 3,
-      teacherId: teacherById.GV005._id,
+      price: 1200000,
+      theoryCredits: 2,
+      practiceCredits: 1,
+      teacherId: teacherById.GV010._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 6, startPeriod: 4, endPeriod: 6, room: "C306" },
-      maxStudents: 40,
+      maxStudents: 10,
       currentStudents: 0,
-      status: "open"
+      status: "planned"
     }
   ]);
+
+  for (const course of courses) {
+    course.price = Number(course.credits || 0) * PRICE_PER_CREDIT;
+  }
+
+  await Promise.all(courses.map((course) => course.save()));
 
   await Registration.insertMany([
     {
@@ -384,23 +342,81 @@ const seed = async () => {
     {
       _id: "DK002",
       studentId: students[1]._id,
-      courseId: courses[1]._id,
+      courseId: courses[0]._id,
       semesterId: semesters[0]._id,
       status: "registered"
     },
     {
       _id: "DK003",
       studentId: students[2]._id,
+      courseId: courses[0]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK004",
+      studentId: students[3]._id,
+      courseId: courses[0]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK005",
+      studentId: students[4]._id,
+      courseId: courses[0]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK006",
+      studentId: students[5]._id,
+      courseId: courses[0]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK007",
+      studentId: students[6]._id,
+      courseId: courses[0]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK008",
+      studentId: students[7]._id,
+      courseId: courses[0]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK009",
+      studentId: students[8]._id,
+      courseId: courses[0]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK010",
+      studentId: students[9]._id,
+      courseId: courses[0]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK011",
+      studentId: students[0]._id,
+      courseId: courses[1]._id,
+      semesterId: semesters[0]._id,
+      status: "registered"
+    },
+    {
+      _id: "DK012",
+      studentId: students[1]._id,
       courseId: courses[2]._id,
       semesterId: semesters[0]._id,
       status: "registered"
     }
   ]);
-
-  courses[0].currentStudents = 1;
-  courses[1].currentStudents = 1;
-  courses[2].currentStudents = 1;
-  await Promise.all([courses[0].save(), courses[1].save(), courses[2].save()]);
 
   await Notification.create({
     _id: "TB001",

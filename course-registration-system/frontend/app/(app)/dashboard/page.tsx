@@ -9,7 +9,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { ResourceTable } from "@/components/app/ResourceTable";
 import { useAuth } from "@/components/layout/AuthProvider";
 import { apiFetch, ApiError, clearAuthToken } from "@/lib/api";
-import { formatDateTime, formatNumber, formatScheduleText, formatStatusLabel } from "@/lib/format";
+import { formatDateTime, formatNumber, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { AdminDashboardData, CourseRecord, DashboardData, RegistrationRecord, StudentDashboardData, TeacherDashboardData } from "@/lib/types";
 import type { ReactNode } from "react";
@@ -72,12 +72,16 @@ function resolveSemesterLabel(value: RegistrationRecord["semesterId"] | CourseRe
   return value.name ?? value.semesterId ?? value._id ?? "-";
 }
 
-function courseStatusClass(status: CourseRecord["status"]) {
+function courseStatusClass(status: string) {
   if (status === "full") {
     return "bg-destructive/10 text-destructive border-destructive/20";
   }
 
-  if (status === "closed") {
+  if (status === "ongoing") {
+    return "bg-sky-500/10 text-sky-700 border-sky-200/60 dark:text-sky-300 dark:border-sky-500/20";
+  }
+
+  if (status === "closed" || status === "planned") {
     return "bg-muted text-muted-foreground border-border";
   }
 
@@ -376,8 +380,8 @@ export default function DashboardPage() {
                 {
                   header: "Trạng thái",
                   render: (course) => (
-                    <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(course.status))}>
-                      {formatStatusLabel(course.status)}
+                    <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", courseStatusClass(resolveCourseDisplayStatus(course)))}>
+                      {formatStatusLabel(resolveCourseDisplayStatus(course))}
                     </span>
                   ),
                 },

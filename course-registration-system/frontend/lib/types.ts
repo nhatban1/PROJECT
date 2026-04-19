@@ -45,9 +45,10 @@ export interface TeacherDashboardCourseSummary {
   _id: string;
   courseId: string;
   name: string;
+  price?: number;
   currentStudents: number;
   maxStudents: number;
-  status: "open" | "closed" | "full";
+  status: "open" | "planned" | "closed" | "full";
   semesterId?: SemesterSummary | string;
   schedule?: {
     dayOfWeek: number;
@@ -78,6 +79,10 @@ export interface SemesterSummary {
   semesterId?: string;
   name?: string;
   status?: string;
+  startDate?: string;
+  endDate?: string;
+  registrationStart?: string;
+  registrationEnd?: string;
 }
 
 export interface StudentSummary {
@@ -125,6 +130,7 @@ export interface CourseRecord {
   courseId: string;
   name: string;
   credits: number;
+  price?: number;
   department?: string;
   description?: string;
   teacherId: MaybePopulated<TeacherSummary>;
@@ -137,7 +143,7 @@ export interface CourseRecord {
   };
   maxStudents: number;
   currentStudents: number;
-  status: "open" | "closed" | "full";
+  status: "open" | "planned" | "closed" | "full";
   createdAt?: string;
   updatedAt?: string;
 }

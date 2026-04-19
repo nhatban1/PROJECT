@@ -8,6 +8,8 @@ const router = express.Router();
 router.get('/my', authMiddleware, registrationController.getMyRegistrations);
 router.get('/course/:courseId', authMiddleware, authorizeRoles('admin', 'teacher'), registrationController.getCourseRegistrations);
 router.post('/', authMiddleware, registrationController.registerCourse);
+router.post('/admin-enroll', authMiddleware, authorizeRoles('admin'), registrationController.adminRegisterCourse);
+router.delete('/admin/:id', authMiddleware, authorizeRoles('admin'), registrationController.adminRemoveRegistration);
 router.delete('/:id', authMiddleware, registrationController.cancelRegistration);
 router.get('/', authMiddleware, authorizeRoles('admin'), registrationController.getRegistrations);
 

@@ -4,8 +4,10 @@ const User = require("../models/User");
 const Teacher = require("../models/Teacher");
 const Semester = require("../models/Semester");
 const Course = require("../models/Course");
+const CourseLifecycleConfig = require("../models/CourseLifecycleConfig");
 const Registration = require("../models/Registration");
 const Notification = require("../models/Notification");
+const { getMongoUri } = require("../utils/mongoUri");
 
 const PRICE_PER_CREDIT = 750000;
 const teacherRoster = [
@@ -43,9 +45,18 @@ const seed = async () => {
     Teacher.deleteMany(),
     Semester.deleteMany(),
     Course.deleteMany(),
+    CourseLifecycleConfig.deleteMany(),
     Registration.deleteMany(),
     Notification.deleteMany()
   ]);
+
+  await CourseLifecycleConfig.create({
+    _id: "course-lifecycle-default",
+    plannedToOpenDays: 7,
+    fullToCloseDays: 30,
+    lowEnrollmentMinStudents: 2,
+    lowEnrollmentCancelDays: 14,
+  });
 
   const admin = await User.create({
     _id: "AD001",
@@ -432,7 +443,7 @@ const seed = async () => {
 };
 
 const run = async () => {
-  const dbUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/course_registration";
+  const dbUri = getMongoUri();
   await mongoose.connect(dbUri);
   try {
     await seed();

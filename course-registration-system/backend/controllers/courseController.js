@@ -2,6 +2,7 @@ const Course = require('../models/Course');
 const Teacher = require('../models/Teacher');
 const Semester = require('../models/Semester');
 const Registration = require('../models/Registration');
+const { getCourseLifecycleConfig } = require('../utils/courseLifecycleConfig');
 const { applyCourseStatus, resolveCourseStatus } = require('../utils/courseState');
 
 exports.getCourses = async (req, res, next) => {
@@ -39,6 +40,15 @@ exports.getCourse = async (req, res, next) => {
     if (!course || course.deletedAt) return res.status(404).json({ success: false, message: 'Course not found' });
     res.json({ success: true, data: course });
   } catch (err) { next(err); }
+};
+
+exports.getLifecycleConfig = async (req, res, next) => {
+  try {
+    const courseLifecycle = await getCourseLifecycleConfig();
+    res.json({ success: true, data: courseLifecycle });
+  } catch (err) {
+    next(err);
+  }
 };
 
 exports.updateCourse = async (req, res, next) => {

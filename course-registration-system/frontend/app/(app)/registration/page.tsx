@@ -1172,7 +1172,7 @@ export default function RegistrationPage() {
                             : displayStatus === "full"
                               ? "Đã đầy"
                               : displayStatus === "ongoing"
-                                ? "Đã học"
+                                ? formatStatusLabel(displayStatus)
                                 : formatStatusLabel(displayStatus)}
                       </button>
                     );

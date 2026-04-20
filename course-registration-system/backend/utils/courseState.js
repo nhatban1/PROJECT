@@ -30,6 +30,10 @@ function resolveCourseStatus(course, requestedStatus) {
     return 'closed';
   }
 
+  if (requestedStatus === 'ongoing') {
+    return 'ongoing';
+  }
+
   if (requestedStatus === 'full') {
     return 'full';
   }
@@ -38,7 +42,7 @@ function resolveCourseStatus(course, requestedStatus) {
     return course.currentStudents >= course.maxStudents ? 'full' : 'open';
   }
 
-  if (course.status === 'closed' || course.status === 'planned') {
+  if (course.status === 'ongoing' || course.status === 'closed' || course.status === 'planned') {
     return course.status;
   }
 
@@ -48,6 +52,12 @@ function resolveCourseStatus(course, requestedStatus) {
 function applyCourseStatus(course, nextStatus, now = new Date()) {
   const previousStatus = course.status;
   course.status = nextStatus;
+
+  if (nextStatus === 'open') {
+    if (previousStatus !== 'open' || !course.openedAt) {
+      course.openedAt = now;
+    }
+  }
 
   if (nextStatus === 'full') {
     if (previousStatus !== 'full' || !course.fullAt) {

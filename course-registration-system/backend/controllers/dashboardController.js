@@ -57,10 +57,12 @@ exports.stats = async (req, res, next) => {
       });
     }
 
-    const studentCount = await User.countDocuments({ role: 'student' });
-    const teacherCount = await User.countDocuments({ role: 'teacher' });
-    const courseCount = await Course.countDocuments();
-    const registrationCount = await Registration.countDocuments({ status: 'registered' });
+    const [studentCount, teacherCount, courseCount, registrationCount] = await Promise.all([
+      User.countDocuments({ role: 'student' }),
+      User.countDocuments({ role: 'teacher' }),
+      Course.countDocuments(),
+      Registration.countDocuments({ status: 'registered' }),
+    ]);
 
     res.json({
       success: true,

@@ -23,11 +23,12 @@ const courseSchema = new mongoose.Schema(
     price: { type: Number, default: 0, min: 0 },
     maxStudents: { type: Number, default: 10 },
     currentStudents: { type: Number, default: 0 },
+    openedAt: Date,
     fullAt: Date,
     cancelledAt: Date,
     cancelReason: { type: String, trim: true },
     deletedAt: Date,
-    status: { type: String, enum: ['planned', 'open', 'closed', 'full'], default: 'open' }
+    status: { type: String, enum: ['planned', 'open', 'ongoing', 'closed', 'full'], default: 'open' }
   },
   { timestamps: true }
 );
@@ -49,6 +50,10 @@ courseSchema.pre('validate', async function (next) {
 });
 
 courseSchema.pre("save", function (next) {
+  if (this.status === 'open' && !this.openedAt) {
+    this.openedAt = new Date();
+  }
+
   this.price = calculateCoursePrice(this);
   next();
 });

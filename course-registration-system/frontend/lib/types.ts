@@ -25,6 +25,13 @@ export interface DashboardStats {
   registrationCount: number;
 }
 
+export interface CourseLifecycleSettings {
+  plannedToOpenDays: number;
+  fullToCloseDays: number;
+  lowEnrollmentMinStudents: number;
+  lowEnrollmentCancelDays: number;
+}
+
 export interface AdminDashboardData {
   role: "admin";
   studentCount: number;
@@ -48,7 +55,7 @@ export interface TeacherDashboardCourseSummary {
   price?: number;
   currentStudents: number;
   maxStudents: number;
-  status: "open" | "planned" | "closed" | "full";
+  status: "open" | "planned" | "ongoing" | "closed" | "full";
   semesterId?: SemesterSummary | string;
   schedule?: {
     dayOfWeek: number;
@@ -143,7 +150,12 @@ export interface CourseRecord {
   };
   maxStudents: number;
   currentStudents: number;
-  status: "open" | "planned" | "closed" | "full";
+  status: "open" | "planned" | "ongoing" | "closed" | "full";
+  openedAt?: string;
+  fullAt?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  deletedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }

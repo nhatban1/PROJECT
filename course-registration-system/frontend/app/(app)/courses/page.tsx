@@ -8,8 +8,8 @@ import { ResourceTable } from "@/components/app/ResourceTable";
 import { useAuth } from "@/components/layout/AuthProvider";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
 import { cn, ensureArray } from "@/lib/utils";
-import { formatCreditBreakdown, formatCurrency, formatNumber, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus } from "@/lib/format";
-import type { CourseRecord } from "@/lib/types";
+import { formatCreditBreakdown, formatCurrency, formatNumber, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus, resolveCourseLifecycleCountdown } from "@/lib/format";
+import type { CourseLifecycleSettings, CourseRecord } from "@/lib/types";
 
 function resolveLabel(value: CourseRecord["teacherId"] | CourseRecord["semesterId"]): string {
   if (!value) {
@@ -59,11 +59,13 @@ export default function CoursesPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [courses, setCourses] = useState<CourseRecord[]>([]);
+  const [courseLifecycle, setCourseLifecycle] = useState<CourseLifecycleSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [deletingCourseId, setDeletingCourseId] = useState("");
   const [updatingCourseId, setUpdatingCourseId] = useState("");
+  const isAdmin = user?.role === "admin";
 
   const loadCourses = useCallback(async () => {
     setLoading(true);
@@ -73,6 +75,23 @@ export default function CoursesPage() {
     try {
       const response = await apiFetch<CourseRecord[]>("/courses?page=1&limit=500");
       setCourses(ensureArray<CourseRecord>(response.data));
+
+      if (isAdmin) {
+        try {
+          const lifecycleResponse = await apiFetch<CourseLifecycleSettings>("/courses/lifecycle");
+          setCourseLifecycle(lifecycleResponse.data ?? null);
+        } catch (lifecycleError) {
+          if (lifecycleError instanceof ApiError && lifecycleError.status === 401) {
+            clearAuthToken();
+            router.replace("/login");
+            return;
+          }
+
+          setCourseLifecycle(null);
+        }
+      } else {
+        setCourseLifecycle(null);
+      }
     } catch (fetchError) {
       if (fetchError instanceof ApiError && fetchError.status === 401) {
         clearAuthToken();
@@ -84,7 +103,7 @@ export default function CoursesPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [isAdmin, router]);
 
   useEffect(() => {
     void loadCourses();
@@ -101,8 +120,6 @@ export default function CoursesPage() {
 
     return { open, full, closed, totalCapacity };
   }, [courses]);
-
-  const isAdmin = user?.role === "admin";
 
   async function handleDelete(course: CourseRecord) {
     if (!window.confirm(`Xóa lớp ${course.name}? Thao tác này sẽ hủy các đăng ký liên quan.`)) {
@@ -181,6 +198,15 @@ export default function CoursesPage() {
     }
 
     await handleUpdateCourse(course, { status: "open" }, `Đã mở lại lớp ${course.name}`);
+  }
+
+  async function handleAllowTeaching(course: CourseRecord) {
+    const confirmed = window.confirm(`Cho phép dạy lớp ${course.name}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    await handleUpdateCourse(course, { status: "ongoing" }, `Đã cho phép dạy lớp ${course.name}`);
   }
 
   async function handleCloseCourse(course: CourseRecord) {
@@ -306,6 +332,26 @@ export default function CoursesPage() {
           ...(isAdmin
             ? [
                 {
+                  header: "Tự động",
+                  render: (course: CourseRecord) => {
+                    const lifecycleText = resolveCourseLifecycleCountdown(course, courseLifecycle ?? undefined);
+
+                    if (lifecycleText === "-") {
+                      return <span className="text-xs text-muted-foreground">-</span>;
+                    }
+
+                    const lifecycleClass = lifecycleText.startsWith("Khóa")
+                      ? "bg-amber-500/10 text-amber-700 border-amber-200/60 dark:text-amber-300 dark:border-amber-500/20"
+                      : "bg-rose-500/10 text-rose-700 border-rose-200/60 dark:text-rose-300 dark:border-rose-500/20";
+
+                    return <span className={cn("inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold", lifecycleClass)}>{lifecycleText}</span>;
+                  },
+                },
+              ]
+            : []),
+          ...(isAdmin
+            ? [
+                {
                   header: "Hành động",
                   render: (course: CourseRecord) => (
                     <div className="flex flex-wrap gap-2">
@@ -322,7 +368,8 @@ export default function CoursesPage() {
                       >
                         {updatingCourseId === course._id ? "Đang sửa..." : "Sửa sĩ số"}
                       </button>
-                      {course.status !== "open" ? (
+
+                      {course.status === "planned" || course.status === "closed" ? (
                         <button
                           type="button"
                           disabled={updatingCourseId === course._id}
@@ -334,9 +381,24 @@ export default function CoursesPage() {
                               : "bg-emerald-600 text-white hover:bg-emerald-500",
                           )}
                         >
-                          {updatingCourseId === course._id ? "Đang mở..." : "Mở lại"}
+                          {updatingCourseId === course._id ? "Đang mở..." : course.status === "planned" ? "Mở lớp" : "Mở lại"}
                         </button>
                       ) : null}
+
+                      <button
+                        type="button"
+                        disabled={updatingCourseId === course._id}
+                        onClick={() => void handleAllowTeaching(course)}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                          updatingCourseId === course._id
+                            ? "cursor-not-allowed bg-muted text-muted-foreground"
+                            : "bg-violet-600 text-white hover:bg-violet-500",
+                        )}
+                      >
+                        {updatingCourseId === course._id ? "Đang duyệt..." : "Cho phép dạy"}
+                      </button>
+
                       {course.status === "closed" || course.status === "planned" ? null : (
                         <button
                           type="button"
@@ -352,6 +414,7 @@ export default function CoursesPage() {
                           {updatingCourseId === course._id ? "Đang khóa..." : "Khóa lớp"}
                         </button>
                       )}
+
                       <button
                         type="button"
                         disabled={deletingCourseId === course._id}

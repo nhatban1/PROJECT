@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BookOpen, CalendarDays, GraduationCap, Users, ClipboardList } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, ClipboardList, GraduationCap, Users } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { ResourceTable } from "@/components/app/ResourceTable";

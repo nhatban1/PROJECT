@@ -92,16 +92,30 @@ type CourseStatusSource = {
     | null;
 };
 
-function toDate(value?: string | Date | null) {
-  if (!value) {
-    return null;
+  type CourseLifecycleSource = {
+    fullToCloseDays?: number | null;
+    lowEnrollmentMinStudents?: number | null;
+    lowEnrollmentCancelDays?: number | null;
+  };
+
+  type CourseLifecycleTimingSource = CourseStatusSource & {
+    openedAt?: string | Date | null;
+    fullAt?: string | Date | null;
+    createdAt?: string | Date | null;
+  };
+
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+  function toDate(value?: string | Date | null) {
+    if (!value) {
+      return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-export function resolveCourseDisplayStatus(course?: CourseStatusSource, referenceDate = new Date()) {
+export function resolveCourseDisplayStatus(course?: CourseStatusSource) {
   if (!course) {
     return "";
   }
@@ -110,20 +124,66 @@ export function resolveCourseDisplayStatus(course?: CourseStatusSource, referenc
   const currentStudents = typeof course.currentStudents === "number" ? course.currentStudents : null;
   const maxStudents = typeof course.maxStudents === "number" ? course.maxStudents : null;
 
+  if (normalizedStatus === "closed" || normalizedStatus === "planned") {
+    return normalizedStatus;
+  }
+
   if (currentStudents !== null && maxStudents !== null && currentStudents >= maxStudents) {
     return "full";
   }
 
-  if (normalizedStatus === "open") {
-    const semester = typeof course.semesterId === "string" ? null : course.semesterId;
-    const startDate = toDate(semester?.startDate ?? null);
+  return "open";
+}
 
-    if (startDate && startDate.getTime() <= referenceDate.getTime()) {
-      return "ongoing";
-    }
+export function resolveCourseLifecycleCountdown(course?: CourseLifecycleTimingSource, lifecycle?: CourseLifecycleSource, referenceDate = new Date()) {
+  if (!course || !lifecycle) {
+    return "-";
   }
 
-  return normalizedStatus ?? "";
+  const normalizedStatus = course.status?.trim().toLowerCase();
+  const currentStudents = typeof course.currentStudents === "number" ? course.currentStudents : null;
+  const maxStudents = typeof course.maxStudents === "number" ? course.maxStudents : null;
+
+  if (normalizedStatus === "closed" || normalizedStatus === "planned") {
+    return "-";
+  }
+
+  const isFull = normalizedStatus === "full" || (currentStudents !== null && maxStudents !== null && currentStudents >= maxStudents);
+
+  if (isFull) {
+    const fullToCloseDays = typeof lifecycle.fullToCloseDays === "number" ? lifecycle.fullToCloseDays : null;
+    if (fullToCloseDays === null) {
+      return "-";
+    }
+
+    const fullAt = toDate(course.fullAt ?? course.createdAt ?? null);
+    if (!fullAt) {
+      return `Khóa sau ${formatNumber(fullToCloseDays)} ngày`;
+    }
+
+    const remainingDays = Math.max(Math.ceil((fullAt.getTime() + fullToCloseDays * MS_PER_DAY - referenceDate.getTime()) / MS_PER_DAY), 0);
+    return `Khóa sau ${formatNumber(remainingDays)} ngày`;
+  }
+
+  const lowEnrollmentMinStudents = typeof lifecycle.lowEnrollmentMinStudents === "number" ? lifecycle.lowEnrollmentMinStudents : null;
+  const lowEnrollmentCancelDays = typeof lifecycle.lowEnrollmentCancelDays === "number" ? lifecycle.lowEnrollmentCancelDays : null;
+
+  if (
+    lowEnrollmentMinStudents !== null &&
+    lowEnrollmentCancelDays !== null &&
+    currentStudents !== null &&
+    currentStudents < lowEnrollmentMinStudents
+  ) {
+    const openedAt = toDate(course.openedAt ?? course.createdAt ?? null);
+    if (!openedAt) {
+      return `Hủy sau ${formatNumber(lowEnrollmentCancelDays)} ngày`;
+    }
+
+    const remainingDays = Math.max(Math.ceil((openedAt.getTime() + lowEnrollmentCancelDays * MS_PER_DAY - referenceDate.getTime()) / MS_PER_DAY), 0);
+    return `Hủy sau ${formatNumber(remainingDays)} ngày`;
+  }
+
+  return "-";
 }
 
 export function getInitials(value?: string | null) {
@@ -174,7 +234,7 @@ export function formatStatusLabel(value?: string | null) {
   const normalized = value.trim().toLowerCase();
   const translations: Record<string, string> = {
     open: "Đang mở",
-    ongoing: "Đã học",
+    ongoing: "Đang dạy",
     full: "Đã đầy",
     closed: "Đã đóng",
     planned: "Đang lên kế hoạch",

@@ -7,6 +7,7 @@ const paginationMiddleware = require('../middleware/paginationMiddleware');
 const router = express.Router();
 
 router.get('/', authMiddleware, paginationMiddleware, courseController.getCourses);
+router.get('/lifecycle', authMiddleware, authorizeRoles('admin'), courseController.getLifecycleConfig);
 router.get('/:id', authMiddleware, courseController.getCourse);
 router.post('/', authMiddleware, authorizeRoles('admin'), courseController.createCourse);
 router.put('/:id', authMiddleware, authorizeRoles('admin'), courseController.updateCourse);

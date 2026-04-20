@@ -1,10 +1,7 @@
 declare module "*.css";
 
-declare module "pdfmake/build/fonts/Roboto" {
-	const fontContainer: {
-		vfs: Record<string, string>;
-		fonts: Record<string, { normal?: string; bold?: string; italics?: string; bolditalics?: string }>;
-	};
+declare module "pdfmake/build/vfs_fonts" {
+	const vfs: Record<string, string>;
 
-	export default fontContainer;
+	export default vfs;
 }

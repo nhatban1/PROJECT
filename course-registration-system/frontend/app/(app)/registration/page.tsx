@@ -18,7 +18,7 @@ import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
 import { formatCreditBreakdown, formatCurrency, formatDateTime, formatNumber, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus } from "@/lib/format";
 import { cn, ensureArray } from "@/lib/utils";
 import pdfMakeBase from "pdfmake/build/pdfmake";
-import robotoFontContainer from "pdfmake/build/fonts/Roboto";
+import pdfMakeVfs from "pdfmake/build/vfs_fonts";
 import type {
   ApiResponse,
   CourseRecord,
@@ -29,11 +29,20 @@ import type {
 } from "@/lib/types";
 
 const pdfMake = pdfMakeBase as unknown as {
-  addFontContainer: (fontContainer: unknown) => void;
+  addVirtualFileSystem: (virtualFileSystem: Record<string, string>) => void;
+  addFonts: (fonts: Record<string, { normal: string; bold: string; italics: string; bolditalics: string }>) => void;
   createPdf: (definition: unknown) => { download: (fileName: string) => void };
 };
 
-pdfMake.addFontContainer(robotoFontContainer);
+pdfMake.addVirtualFileSystem(pdfMakeVfs);
+pdfMake.addFonts({
+  Roboto: {
+    normal: "Roboto-Regular.ttf",
+    bold: "Roboto-Medium.ttf",
+    italics: "Roboto-Italic.ttf",
+    bolditalics: "Roboto-MediumItalic.ttf",
+  },
+});
 
 function resolveTeacherLabel(value: CourseRecord["teacherId"]): string {
   if (!value) {

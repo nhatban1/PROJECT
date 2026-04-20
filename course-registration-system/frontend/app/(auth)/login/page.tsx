@@ -65,17 +65,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f8fafc_0%,#eff6ff_42%,#dbeafe_100%)] text-foreground">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 top-0 h-[32rem] w-[32rem] rounded-full bg-[#93C5FD]/35 blur-[120px]" />
-        <div className="absolute right-[-8rem] top-24 h-[28rem] w-[28rem] rounded-full bg-[#1D4ED8]/20 blur-[120px]" />
-        <div className="absolute bottom-0 left-1/2 h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-[#0F4C81]/15 blur-[120px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.55)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.55)_1px,transparent_1px)] bg-[size:72px_72px] opacity-25" />
-      </div>
-
+    <div className="relative min-h-screen w-full overflow-hidden bg-[linear-gradient(to_bottom_right,#a3bbed_0%,#ffffff_50%,#e4d4f4_100%)] text-foreground">
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex justify-center">
-          <div className="w-full max-w-3xl rounded-[2rem] border border-white/70 bg-white/80 px-6 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.14)] backdrop-blur">
+          <div className="w-full rounded-[2rem] border border-white/70 bg-white/80 px-6 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.14)] backdrop-blur">
             <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
               <Image src="/iuh-eduhub-logo.svg" alt="IUH EduHub" width={320} height={88} priority className="h-16 w-auto sm:h-20" />
               <div className="space-y-1">
@@ -87,16 +80,16 @@ export default function LoginPage() {
         </header>
 
         <main className="flex flex-1 items-center justify-center py-2">
-          <div className="w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur-lg">
+          <div className="w-full overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur-lg">
             <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
               <section className="relative overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_48%,#2563eb_100%)] p-8 text-white sm:p-10 lg:p-12">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_32%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_40%,rgba(255,255,255,0.06)_72%,transparent)]" />
                 <div className="relative flex h-full flex-col justify-between gap-10">
                   <div className="space-y-4">
                     <div className="space-y-3">
-                      <h1 className="max-w-md text-4xl font-semibold tracking-tight sm:text-5xl">Đăng ký môn học</h1>
+                      <h3 className="max-w-md text-4xl font-semibold tracking-tight sm:text-5xl">IUH-EduHub - Hệ thống quản lý môn học chuyên nghiệp!</h3>
                       <p className="max-w-lg text-sm leading-7 text-sky-50/90 sm:text-base">
-                        Đăng nhập để xem môn học, chọn lớp và đăng ký các học phần đang mở.
+                        Hãy đăng nhập ngay để xem môn học, chọn lớp và đăng ký các học phần đang mở.
                       </p>
                     </div>
                   </div>
@@ -201,18 +194,19 @@ export default function LoginPage() {
                   </Button>
                 </form>
 
-                <p className="mt-6 text-center text-sm text-muted-foreground">Bạn cần tài khoản? Hãy liên hệ quản trị viên.</p>
+                <p className="mt-6 text-center text-sm text-muted-foreground">Bạn cần tạo tài khoản? Hãy liên hệ với quản trị viên.</p>
               </section>
             </div>
           </div>
         </main>
 
-        <footer className="mt-6 overflow-hidden rounded-[0.5rem] border border-[#0b63c9]/20 bg-[#0f74e8] text-white shadow-[0_16px_40px_rgba(15,116,232,0.22)]">
-          <div className="grid gap-px lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
+        <footer className="relative mt-6 overflow-hidden rounded-[0.5rem] border border-white/20 bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_48%,#2563eb_100%)] text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_32%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_40%,rgba(255,255,255,0.06)_72%,transparent)]" />
+          <div className="relative grid gap-px lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
             <div className="px-5 py-4 sm:px-6 sm:py-5">
               <p className="text-[15px] font-semibold uppercase tracking-wide">TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP TP HỒ CHÍ MINH</p>
               <div className="mt-2 space-y-1 text-sm leading-6 text-white/95">
-                <p>Địa chỉ : Số 12 Nguyễn Văn Bảo, Phường 4, Quận Gò Vấp, TP. Hồ Chí Minh</p>
+                <p>Địa chỉ : Số 12 Nguyễn Văn Bảo, Phường Hạnh Thông, TP. Hồ Chí Minh (Trụ sở chính)</p>
                 <p>Điện thoại: 0283 8940 390</p>
                 <p>Fax: 0283 9940 954</p>
                 <p>Email: dhcn@iuh.edu.vn</p>
@@ -223,13 +217,16 @@ export default function LoginPage() {
               <p className="text-[15px] font-semibold uppercase tracking-wide">Thống kê truy cập</p>
               <div className="mt-2 space-y-1 text-sm leading-6 text-white/95 lg:ml-auto lg:max-w-xs">
                 <p>Lượt truy cập: 1792112</p>
-                <p>Đang online: 220</p>
+                <p>Đang online: Loading ...</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#5aa6ef] px-5 py-3 text-center text-sm font-medium text-white sm:px-6">
-            Bản quyền 2018 - Trường Đại học Công nghiệp TP. Hồ Chí Minh
+          <div className="relative overflow-hidden bg-white/10 px-5 py-3 text-center text-sm font-medium text-white backdrop-blur sm:px-6 border-t border-white/10">
+            {/* Họa tiết gợn sóng (wavy lines pattern) + hiệu ứng Hologram bóng mờ */}
+            <div className="pointer-events-none absolute inset-0 opacity-80" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='30' height='8' viewBox='0 0 30 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1' stroke-opacity='0.2'%3E%3Cpath d='M0 4q7.5 4 15 0t15 0'/%3E%3C/g%3E%3C/svg%3E")` }} />
+            <div className="pointer-events-none absolute -inset-1/2 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-60 mix-blend-overlay rotate-12 blur-md" />
+            <span className="relative z-10">© 2026 Industrial University of Ho Chi Minh City. All rights reserved.</span>
           </div>
         </footer>
       </div>

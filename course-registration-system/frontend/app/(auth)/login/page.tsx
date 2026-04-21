@@ -65,22 +65,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[linear-gradient(to_bottom_right,#a3bbed_0%,#ffffff_50%,#e4d4f4_100%)] text-foreground">
+    <div className="relative min-h-screen w-full overflow-hidden bg-[linear-gradient(to_bottom_right,#a3bbed_0%,#ffffff_50%,#e4d4f4_100%)] dark:bg-[linear-gradient(to_bottom_right,#1e293b_0%,#0f172a_100%)] text-foreground">
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex justify-center">
-          <div className="w-full rounded-[2rem] border border-white/70 bg-white/80 px-6 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.14)] backdrop-blur">
+          <div className="w-full rounded-[2rem] border border-white/70 bg-white/80 dark:bg-[#161b22]/90 dark:border-white/10 px-6 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.14)] backdrop-blur">
             <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
               <Image src="/iuh-eduhub-logo.svg" alt="IUH EduHub" width={320} height={88} priority className="h-16 w-auto sm:h-20" />
               <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Industrial University of Ho Chi Minh City</p>
-                <p className="text-sm text-muted-foreground">Cổng đăng nhập hệ thống đăng ký học phần và quản lý lớp học.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700 dark:text-sky-400">Industrial University of Ho Chi Minh City</p>
+                <p className="text-sm text-muted-foreground dark:text-slate-200">Cổng đăng nhập hệ thống đăng ký học phần và quản lý lớp học.</p>
               </div>
             </div>
           </div>
         </header>
 
         <main className="flex flex-1 items-center justify-center py-2">
-          <div className="w-full overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur-lg">
+          <div className="w-full overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 dark:bg-[#161b22]/90 dark:border-white/10 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur-lg">
             <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
               <section className="relative overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_48%,#2563eb_100%)] p-8 text-white sm:p-10 lg:p-12">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_32%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_40%,rgba(255,255,255,0.06)_72%,transparent)]" />
@@ -116,7 +116,7 @@ export default function LoginPage() {
 
               <section className="p-8 sm:p-10 lg:p-12">
                 <div className="mb-8 space-y-3">
-                  <p className="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">
+                  <p className="inline-flex w-fit items-center rounded-full bg-slate-100 dark:bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:text-slate-300">
                     Đăng nhập hệ thống
                   </p>
                   <h2 className="text-3xl font-semibold tracking-tight text-foreground">Chào mừng trở lại</h2>
@@ -138,7 +138,7 @@ export default function LoginPage() {
                         required
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
-                        className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
+                        className="h-11 w-full rounded-xl border border-input bg-background dark:bg-[#1a1f2e] dark:border-white/10 pl-10 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
                         placeholder="Admin@iuh.edu.vn"
                       />
                     </div>
@@ -158,7 +158,7 @@ export default function LoginPage() {
                         required
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-12 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
+                        className="h-11 w-full rounded-xl border border-input bg-background dark:bg-[#1a1f2e] dark:border-white/10 pl-10 pr-12 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
                         placeholder="Nhập mật khẩu của bạn"
                       />
                       <button
@@ -180,7 +180,7 @@ export default function LoginPage() {
 
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <label className="inline-flex items-center gap-2">
-                      <input type="checkbox" className="h-4 w-4 rounded border-input text-primary focus:ring-primary" />
+                      <input type="checkbox" className="h-4 w-4 rounded border-input dark:border-white/20 dark:bg-transparent text-primary focus:ring-primary" />
                       Ghi nhớ tôi
                     </label>
                     <button type="button" className="font-medium text-primary transition hover:text-primary/80">
@@ -204,7 +204,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_32%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_40%,rgba(255,255,255,0.06)_72%,transparent)]" />
           <div className="relative grid gap-px lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
             <div className="px-5 py-4 sm:px-6 sm:py-5">
-              <p className="text-[15px] font-semibold uppercase tracking-wide">TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP TP HỒ CHÍ MINH</p>
+              <p className="text-[15px] font-semibold uppercase tracking-wide dark:text-[#FFD700]">TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP TP HỒ CHÍ MINH</p>
               <div className="mt-2 space-y-1 text-sm leading-6 text-white/95">
                 <p>Địa chỉ : Số 12 Nguyễn Văn Bảo, Phường Hạnh Thông, TP. Hồ Chí Minh (Trụ sở chính)</p>
                 <p>Điện thoại: 0283 8940 390</p>
@@ -214,9 +214,9 @@ export default function LoginPage() {
             </div>
 
             <div className="px-5 py-4 sm:px-6 sm:py-5 lg:text-right">
-              <p className="text-[15px] font-semibold uppercase tracking-wide">Thống kê truy cập</p>
+              <p className="text-[15px] font-semibold uppercase tracking-wide dark:text-[#FFD700]">Thống kê truy cập</p>
               <div className="mt-2 space-y-1 text-sm leading-6 text-white/95 lg:ml-auto lg:max-w-xs">
-                <p>Lượt truy cập: 1792112</p>
+                <p>Lượt truy cập: Analyzing ...</p>
                 <p>Đang online: Loading ...</p>
               </div>
             </div>
@@ -226,7 +226,7 @@ export default function LoginPage() {
             {/* Họa tiết gợn sóng (wavy lines pattern) + hiệu ứng Hologram bóng mờ */}
             <div className="pointer-events-none absolute inset-0 opacity-80" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='30' height='8' viewBox='0 0 30 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1' stroke-opacity='0.2'%3E%3Cpath d='M0 4q7.5 4 15 0t15 0'/%3E%3C/g%3E%3C/svg%3E")` }} />
             <div className="pointer-events-none absolute -inset-1/2 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-60 mix-blend-overlay rotate-12 blur-md" />
-            <span className="relative z-10">© 2026 Industrial University of Ho Chi Minh City. All rights reserved.</span>
+            <span className="relative z-10 dark:text-[#FFD700]">© 2026 Industrial University of Ho Chi Minh City - EduHub. All rights reserved.</span>
           </div>
         </footer>
       </div>

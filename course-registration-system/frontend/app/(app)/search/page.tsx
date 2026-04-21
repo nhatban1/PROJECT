@@ -181,7 +181,7 @@ export default function SearchPage() {
         </div>
         <ResourceTable
           loading={loading}
-          rows={filteredTeachers.slice(0, 8)}
+          rows={filteredTeachers}
           rowKey={(teacher) => teacher._id}
           emptyMessage="Không tìm thấy giảng viên phù hợp."
           columns={[

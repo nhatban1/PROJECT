@@ -1,15 +1,105 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Clock3, Layers3, Trash2 } from "lucide-react";
+import { BookOpen, Clock3, Layers3, Loader2, PlusCircle, Trash2 } from "lucide-react";
 
 import { ResourceTable } from "@/components/app/ResourceTable";
 import { useAuth } from "@/components/layout/AuthProvider";
 import { ApiError, apiFetch, clearAuthToken } from "@/lib/api";
 import { cn, ensureArray } from "@/lib/utils";
-import { formatCreditBreakdown, formatCurrency, formatNumber, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus, resolveCourseLifecycleCountdown } from "@/lib/format";
-import type { CourseLifecycleSettings, CourseRecord } from "@/lib/types";
+import { formatCreditBreakdown, formatCurrency, formatNumber, formatScheduleDay, formatScheduleText, formatStatusLabel, resolveCourseDisplayStatus, resolveCourseLifecycleCountdown } from "@/lib/format";
+import type { CourseLifecycleSettings, CourseRecord, SemesterSummary, TeacherRecord } from "@/lib/types";
+
+type CourseFormState = {
+  name: string;
+  credits: string;
+  theoryCredits: string;
+  practiceCredits: string;
+  department: string;
+  description: string;
+  teacherId: string;
+  semesterId: string;
+  dayOfWeek: string;
+  startPeriod: string;
+  endPeriod: string;
+  room: string;
+  maxStudents: string;
+};
+
+type CourseCreatePayload = {
+  name: string;
+  credits: number;
+  theoryCredits?: number;
+  practiceCredits?: number;
+  department?: string;
+  description?: string;
+  teacherId: string;
+  semesterId: string;
+  schedule: {
+    dayOfWeek: number;
+    startPeriod: number;
+    endPeriod: number;
+    room?: string;
+  };
+  maxStudents: number;
+  status: "planned";
+};
+
+const DEFAULT_COURSE_FORM: CourseFormState = {
+  name: "",
+  credits: "3",
+  theoryCredits: "",
+  practiceCredits: "",
+  department: "",
+  description: "",
+  teacherId: "",
+  semesterId: "",
+  dayOfWeek: "1",
+  startPeriod: "1",
+  endPeriod: "2",
+  room: "",
+  maxStudents: "30",
+};
+
+const INPUT_CLASS_NAME =
+  "h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10";
+const TEXTAREA_CLASS_NAME =
+  "min-h-24 w-full rounded-xl border border-input bg-background px-3 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10";
+const SELECT_CLASS_NAME = `${INPUT_CLASS_NAME} appearance-none`;
+
+const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7];
+const PERIODS = Array.from({ length: 12 }, (_, index) => index + 1);
+
+function createDefaultCourseForm(): CourseFormState {
+  return { ...DEFAULT_COURSE_FORM };
+}
+
+function parseOptionalInteger(value: string) {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const parsedValue = Number(trimmedValue);
+  return Number.isInteger(parsedValue) ? parsedValue : Number.NaN;
+}
+
+function formatTeacherOption(teacher: TeacherRecord) {
+  const code = teacher.teacherId || teacher._id;
+  const inactiveSuffix = teacher.isActive === false ? " (đã khóa)" : "";
+
+  return `${code} · ${teacher.fullName}${inactiveSuffix}`;
+}
+
+function formatSemesterOption(semester: SemesterSummary) {
+  const code = semester.semesterId || semester._id || "HK";
+  const name = semester.name || "Học kỳ";
+  const status = semester.status ? ` (${semester.status})` : "";
+
+  return `${code} · ${name}${status}`;
+}
 
 function resolveLabel(value: CourseRecord["teacherId"] | CourseRecord["semesterId"]): string {
   if (!value) {
@@ -60,12 +150,24 @@ export default function CoursesPage() {
   const { user } = useAuth();
   const [courses, setCourses] = useState<CourseRecord[]>([]);
   const [courseLifecycle, setCourseLifecycle] = useState<CourseLifecycleSettings | null>(null);
+  const [teachers, setTeachers] = useState<TeacherRecord[]>([]);
+  const [semesters, setSemesters] = useState<SemesterSummary[]>([]);
+  const [courseForm, setCourseForm] = useState<CourseFormState>(() => createDefaultCourseForm());
   const [loading, setLoading] = useState(true);
+  const [creatingCourse, setCreatingCourse] = useState(false);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [deletingCourseId, setDeletingCourseId] = useState("");
   const [updatingCourseId, setUpdatingCourseId] = useState("");
   const isAdmin = user?.role === "admin";
+  const hasReferenceData = teachers.length > 0 && semesters.length > 0;
+
+  function updateCourseFormField<K extends keyof CourseFormState>(field: K, value: CourseFormState[K]) {
+    setCourseForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
 
   const loadCourses = useCallback(async () => {
     setLoading(true);
@@ -78,8 +180,15 @@ export default function CoursesPage() {
 
       if (isAdmin) {
         try {
-          const lifecycleResponse = await apiFetch<CourseLifecycleSettings>("/courses/lifecycle");
+          const [lifecycleResponse, teacherResponse, semesterResponse] = await Promise.all([
+            apiFetch<CourseLifecycleSettings>("/courses/lifecycle"),
+            apiFetch<TeacherRecord[]>("/teachers?page=1&limit=500"),
+            apiFetch<SemesterSummary[]>("/semesters?page=1&limit=500"),
+          ]);
+
           setCourseLifecycle(lifecycleResponse.data ?? null);
+          setTeachers(ensureArray<TeacherRecord>(teacherResponse.data));
+          setSemesters(ensureArray<SemesterSummary>(semesterResponse.data));
         } catch (lifecycleError) {
           if (lifecycleError instanceof ApiError && lifecycleError.status === 401) {
             clearAuthToken();
@@ -88,9 +197,14 @@ export default function CoursesPage() {
           }
 
           setCourseLifecycle(null);
+          setTeachers([]);
+          setSemesters([]);
+          setError(lifecycleError instanceof Error ? lifecycleError.message : "Không tải được dữ liệu quản trị");
         }
       } else {
         setCourseLifecycle(null);
+        setTeachers([]);
+        setSemesters([]);
       }
     } catch (fetchError) {
       if (fetchError instanceof ApiError && fetchError.status === 401) {
@@ -121,6 +235,131 @@ export default function CoursesPage() {
     return { open, full, closed, totalCapacity };
   }, [courses]);
 
+  async function handleCreateCourse(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!isAdmin || creatingCourse) {
+      return;
+    }
+
+    setError("");
+    setStatusMessage("");
+
+    const name = courseForm.name.trim();
+    const credits = Number(courseForm.credits);
+    const theoryCredits = parseOptionalInteger(courseForm.theoryCredits);
+    const practiceCredits = parseOptionalInteger(courseForm.practiceCredits);
+    const department = courseForm.department.trim();
+    const description = courseForm.description.trim();
+    const teacherId = courseForm.teacherId.trim();
+    const semesterId = courseForm.semesterId.trim();
+    const dayOfWeek = Number(courseForm.dayOfWeek);
+    const startPeriod = Number(courseForm.startPeriod);
+    const endPeriod = Number(courseForm.endPeriod);
+    const room = courseForm.room.trim();
+    const maxStudents = Number(courseForm.maxStudents);
+
+    if (!name) {
+      setError("Vui lòng nhập tên lớp học.");
+      return;
+    }
+
+    if (!Number.isInteger(credits) || credits < 1 || credits > 6) {
+      setError("Tín chỉ phải là số nguyên từ 1 đến 6.");
+      return;
+    }
+
+    if (theoryCredits !== null && (!Number.isInteger(theoryCredits) || theoryCredits < 0)) {
+      setError("Tín chỉ lý thuyết phải là số nguyên không âm.");
+      return;
+    }
+
+    if (practiceCredits !== null && (!Number.isInteger(practiceCredits) || practiceCredits < 0)) {
+      setError("Tín chỉ thực hành phải là số nguyên không âm.");
+      return;
+    }
+
+    if (!teacherId) {
+      setError("Vui lòng chọn giảng viên phụ trách.");
+      return;
+    }
+
+    if (!semesterId) {
+      setError("Vui lòng chọn học kỳ.");
+      return;
+    }
+
+    if (!Number.isInteger(dayOfWeek) || dayOfWeek < 1 || dayOfWeek > 7) {
+      setError("Ngày học phải nằm trong khoảng 1 đến 7.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(startPeriod) ||
+      !Number.isInteger(endPeriod) ||
+      startPeriod < 1 ||
+      startPeriod > 12 ||
+      endPeriod < 1 ||
+      endPeriod > 12
+    ) {
+      setError("Tiết học phải là số nguyên từ 1 đến 12.");
+      return;
+    }
+
+    if (startPeriod > endPeriod) {
+      setError("Tiết kết thúc phải lớn hơn hoặc bằng tiết bắt đầu.");
+      return;
+    }
+
+    if (!Number.isInteger(maxStudents) || maxStudents < 1) {
+      setError("Sĩ số tối đa phải là số nguyên lớn hơn 0.");
+      return;
+    }
+
+    const payload: CourseCreatePayload = {
+      name,
+      credits,
+      ...(theoryCredits !== null ? { theoryCredits } : {}),
+      ...(practiceCredits !== null ? { practiceCredits } : {}),
+      ...(department ? { department } : {}),
+      ...(description ? { description } : {}),
+      teacherId,
+      semesterId,
+      schedule: {
+        dayOfWeek,
+        startPeriod,
+        endPeriod,
+        ...(room ? { room } : {}),
+      },
+      maxStudents,
+      status: "planned",
+    };
+
+    setCreatingCourse(true);
+
+    try {
+      const response = await apiFetch<CourseRecord>("/courses", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      const createdCourseName = response.data?.name ?? name;
+      setCourseForm(createDefaultCourseForm());
+      await loadCourses();
+      setStatusMessage(`Đã tạo lớp ${createdCourseName}`);
+    } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearAuthToken();
+        router.replace("/login");
+        return;
+      }
+
+      setError(fetchError instanceof Error ? fetchError.message : "Không thể tạo lớp học");
+    } finally {
+      setCreatingCourse(false);
+    }
+  }
+
   async function handleDelete(course: CourseRecord) {
     if (!window.confirm(`Xóa lớp ${course.name}? Thao tác này sẽ hủy các đăng ký liên quan.`)) {
       return;
@@ -135,8 +374,8 @@ export default function CoursesPage() {
         method: "DELETE",
       });
 
-      setStatusMessage(`Đã xóa lớp ${course.name}`);
       await loadCourses();
+      setStatusMessage(`Đã xóa lớp ${course.name}`);
     } catch (fetchError) {
       if (fetchError instanceof ApiError && fetchError.status === 401) {
         clearAuthToken();
@@ -161,8 +400,8 @@ export default function CoursesPage() {
         body: JSON.stringify(payload),
       });
 
-      setStatusMessage(successMessage);
       await loadCourses();
+      setStatusMessage(successMessage);
     } catch (fetchError) {
       if (fetchError instanceof ApiError && fetchError.status === 401) {
         clearAuthToken();
@@ -253,6 +492,273 @@ export default function CoursesPage() {
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-700 dark:text-emerald-300">
           {statusMessage}
         </div>
+      ) : null}
+
+      {isAdmin ? (
+        <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <div className="flex flex-col gap-3">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Quản trị</p>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">Tạo lớp học mới</h2>
+              <p className="max-w-3xl text-sm text-muted-foreground">
+                Nhập thông tin lớp học, giảng viên phụ trách, học kỳ và lịch học. Mã lớp sẽ được hệ thống sinh tự động.
+              </p>
+            </div>
+
+            <p className="text-xs text-muted-foreground">Lớp mới sẽ được khởi tạo ở trạng thái chờ mở (planned) để bạn có thể mở lớp sau.</p>
+          </div>
+
+          {!hasReferenceData ? (
+            <div className="mt-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+              Cần có ít nhất một giảng viên và một học kỳ trước khi tạo lớp học.
+            </div>
+          ) : null}
+
+          <form className="mt-6 space-y-6" onSubmit={handleCreateCourse}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-name">
+                  Tên lớp học
+                </label>
+                <input
+                  id="course-name"
+                  value={courseForm.name}
+                  onChange={(event) => updateCourseFormField("name", event.target.value)}
+                  placeholder="Ví dụ: Lập trình Web"
+                  className={INPUT_CLASS_NAME}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-department">
+                  Khoa / bộ môn
+                </label>
+                <input
+                  id="course-department"
+                  value={courseForm.department}
+                  onChange={(event) => updateCourseFormField("department", event.target.value)}
+                  placeholder="Ví dụ: Công nghệ thông tin"
+                  className={INPUT_CLASS_NAME}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-credits">
+                  Tổng tín chỉ
+                </label>
+                <input
+                  id="course-credits"
+                  type="number"
+                  min="1"
+                  max="6"
+                  step="1"
+                  value={courseForm.credits}
+                  onChange={(event) => updateCourseFormField("credits", event.target.value)}
+                  className={INPUT_CLASS_NAME}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-theory-credits">
+                  Tín chỉ lý thuyết
+                </label>
+                <input
+                  id="course-theory-credits"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={courseForm.theoryCredits}
+                  onChange={(event) => updateCourseFormField("theoryCredits", event.target.value)}
+                  placeholder="Tuỳ chọn"
+                  className={INPUT_CLASS_NAME}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-practice-credits">
+                  Tín chỉ thực hành
+                </label>
+                <input
+                  id="course-practice-credits"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={courseForm.practiceCredits}
+                  onChange={(event) => updateCourseFormField("practiceCredits", event.target.value)}
+                  placeholder="Tuỳ chọn"
+                  className={INPUT_CLASS_NAME}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-max-students">
+                  Sĩ số tối đa
+                </label>
+                <input
+                  id="course-max-students"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={courseForm.maxStudents}
+                  onChange={(event) => updateCourseFormField("maxStudents", event.target.value)}
+                  className={INPUT_CLASS_NAME}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-teacher">
+                  Giảng viên phụ trách
+                </label>
+                <select
+                  id="course-teacher"
+                  value={courseForm.teacherId}
+                  onChange={(event) => updateCourseFormField("teacherId", event.target.value)}
+                  className={SELECT_CLASS_NAME}
+                >
+                  <option value="">Chọn giảng viên</option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher._id} value={teacher._id}>
+                      {formatTeacherOption(teacher)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-semester">
+                  Học kỳ
+                </label>
+                <select
+                  id="course-semester"
+                  value={courseForm.semesterId}
+                  onChange={(event) => updateCourseFormField("semesterId", event.target.value)}
+                  className={SELECT_CLASS_NAME}
+                >
+                  <option value="">Chọn học kỳ</option>
+                  {semesters.map((semester) => (
+                    <option key={semester._id || semester.semesterId || semester.name} value={semester._id || semester.semesterId || ""}>
+                      {formatSemesterOption(semester)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-day-of-week">
+                  Ngày học
+                </label>
+                <select
+                  id="course-day-of-week"
+                  value={courseForm.dayOfWeek}
+                  onChange={(event) => updateCourseFormField("dayOfWeek", event.target.value)}
+                  className={SELECT_CLASS_NAME}
+                >
+                  {WEEK_DAYS.map((day) => (
+                    <option key={day} value={day}>
+                      {formatScheduleDay(day)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-start-period">
+                  Tiết bắt đầu
+                </label>
+                <select
+                  id="course-start-period"
+                  value={courseForm.startPeriod}
+                  onChange={(event) => updateCourseFormField("startPeriod", event.target.value)}
+                  className={SELECT_CLASS_NAME}
+                >
+                  {PERIODS.map((period) => (
+                    <option key={period} value={period}>
+                      Tiết {period}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-end-period">
+                  Tiết kết thúc
+                </label>
+                <select
+                  id="course-end-period"
+                  value={courseForm.endPeriod}
+                  onChange={(event) => updateCourseFormField("endPeriod", event.target.value)}
+                  className={SELECT_CLASS_NAME}
+                >
+                  {PERIODS.map((period) => (
+                    <option key={period} value={period}>
+                      Tiết {period}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="course-room">
+                  Phòng học
+                </label>
+                <input
+                  id="course-room"
+                  value={courseForm.room}
+                  onChange={(event) => updateCourseFormField("room", event.target.value)}
+                  placeholder="Ví dụ: A1.02"
+                  className={INPUT_CLASS_NAME}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="course-description">
+                Mô tả
+              </label>
+              <textarea
+                id="course-description"
+                value={courseForm.description}
+                onChange={(event) => updateCourseFormField("description", event.target.value)}
+                placeholder="Mô tả ngắn gọn về lớp học"
+                rows={4}
+                className={TEXTAREA_CLASS_NAME}
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/20 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+              <p className="text-sm text-muted-foreground">Lưu ý: lớp mới mặc định ở trạng thái planned và courseId sẽ được sinh tự động.</p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCourseForm(createDefaultCourseForm())}
+                  className="inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
+                >
+                  Làm mới
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={creatingCourse || loading || !hasReferenceData}
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition",
+                    creatingCourse || loading || !hasReferenceData
+                      ? "cursor-not-allowed bg-muted text-muted-foreground"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90",
+                  )}
+                >
+                  {creatingCourse ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+                  {creatingCourse ? "Đang tạo..." : "Tạo lớp học"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
       ) : null}
 
       <ResourceTable

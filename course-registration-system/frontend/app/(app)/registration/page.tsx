@@ -170,6 +170,18 @@ function isTeacherCourse(course: CourseRecord, userId?: string | null) {
   return String(teacher._id ?? teacher.teacherId ?? "") === String(userId);
 }
 
+function resolveSemesterId(value: CourseRecord["semesterId"]): string {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return value._id ?? value.semesterId ?? "";
+}
+
 export default function RegistrationPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -281,15 +293,13 @@ export default function RegistrationPage() {
   const availableStudentCourses = useMemo(
     () =>
       courses.filter((course) => {
-        if (!isCourseInSemester(course, activeSemester)) {
-          return false;
-        }
-
         const displayStatus = resolveCourseDisplayStatus(course);
-        return displayStatus !== "closed" && displayStatus !== "planned";
+        return displayStatus === "open";
       }),
-    [activeSemester, courses],
+    [courses],
   );
+
+  const studentRegistrationClosed = role === "student" && availableStudentCourses.length === 0;
 
   const courseIdsRegisteredByStudent = useMemo(() => {
     return new Set(
@@ -386,8 +396,10 @@ export default function RegistrationPage() {
   const rosterCurrentCount = selectedRoster?.total ?? 0;
 
   async function handleRegister(course: CourseRecord) {
-    if (!activeSemester) {
-      setError("Không tìm thấy học kỳ đang mở để đăng ký");
+    const semesterId = resolveSemesterId(course.semesterId);
+
+    if (!semesterId) {
+      setError("Không tìm thấy học kỳ của môn học này");
       return;
     }
 
@@ -400,7 +412,7 @@ export default function RegistrationPage() {
         method: "POST",
         body: JSON.stringify({
           courseId: course._id,
-          semesterId: activeSemester._id,
+          semesterId,
         }),
       });
 
@@ -872,7 +884,7 @@ export default function RegistrationPage() {
 
   const roleDescription =
     role === "student"
-      ? "Chọn môn đang mở trong học kỳ hiện tại để đăng ký và theo dõi các môn đã đăng ký."
+      ? "Chọn lớp đang mở để đăng ký và theo dõi các môn đã đăng ký."
       : role === "teacher"
         ? "Chọn lớp của bạn để xem số lượng sinh viên và danh sách sinh viên đã đăng ký."
         : "Đăng ký, tra cứu và theo dõi toàn bộ lượt ghi danh trong hệ thống.";
@@ -906,6 +918,12 @@ export default function RegistrationPage() {
       {error ? (
         <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-5 py-4 text-sm text-destructive">
           {error}
+        </div>
+      ) : null}
+
+      {studentRegistrationClosed ? (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-5 py-4 text-sm text-amber-700 dark:text-amber-300">
+          Hiện chưa có lớp nào đang mở để đăng ký. Hãy chờ admin mở lớp sang trạng thái đang mở.
         </div>
       ) : null}
 
@@ -1094,7 +1112,7 @@ export default function RegistrationPage() {
               error={null}
               rows={availableStudentCourses}
               rowKey={(course) => course._id}
-              emptyMessage="Không có môn học nào trong học kỳ hiện tại."
+              emptyMessage="Chưa có lớp nào đang mở để đăng ký."
               columns={[
                 {
                   header: "Môn học",
@@ -1104,6 +1122,10 @@ export default function RegistrationPage() {
                       <p className="text-xs text-muted-foreground">{course.courseId}</p>
                     </div>
                   ),
+                },
+                {
+                  header: "Tín chỉ",
+                  render: (course) => <span className="font-medium text-foreground">{formatNumber(course.credits)}</span>,
                 },
                 {
                   header: "Giảng viên",
@@ -1148,7 +1170,7 @@ export default function RegistrationPage() {
                   render: (course) => {
                     const alreadyRegistered = courseIdsRegisteredByStudent.has(course._id);
                     const displayStatus = resolveCourseDisplayStatus(course);
-                    const disabled = alreadyRegistered || displayStatus !== "open" || busyCourseId === course._id || !activeSemester;
+                    const disabled = alreadyRegistered || displayStatus !== "open" || busyCourseId === course._id;
 
                     return (
                       <button
@@ -1171,9 +1193,7 @@ export default function RegistrationPage() {
                             ? "Đăng ký"
                             : displayStatus === "full"
                               ? "Đã đầy"
-                              : displayStatus === "ongoing"
-                                ? formatStatusLabel(displayStatus)
-                                : formatStatusLabel(displayStatus)}
+                              : formatStatusLabel(displayStatus)}
                       </button>
                     );
                   },
@@ -1201,6 +1221,14 @@ export default function RegistrationPage() {
                       <p className="font-medium text-foreground">{resolveCourseLabel(registration.courseId)}</p>
                       <p className="text-xs text-muted-foreground">{resolveCourseKey(registration.courseId)}</p>
                     </div>
+                  ),
+                },
+                {
+                  header: "Tín chỉ",
+                  render: (registration) => (
+                    <span className="font-medium text-foreground">
+                      {typeof registration.courseId === "string" ? "-" : formatNumber(registration.courseId.credits)}
+                    </span>
                   ),
                 },
                 {

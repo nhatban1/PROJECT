@@ -1,4 +1,5 @@
 const Semester = require("../models/Semester");
+const { isSemesterRegistrationOpen } = require("../utils/semesterWindow");
 
 exports.getSemesters = async (req, res, next) => {
   try {
@@ -52,7 +53,9 @@ exports.deleteSemester = async (req, res, next) => {
 
 exports.getActiveSemester = async (req, res, next) => {
   try {
-    const semester = await Semester.findOne({ status: "registration" });
+    const semesters = await Semester.find({ status: "registration" }).sort({ registrationStart: 1, createdAt: 1 });
+    const semester = semesters.find((item) => isSemesterRegistrationOpen(item)) ?? null;
+
     res.json({ success: true, data: semester });
   } catch (error) {
     next(error);

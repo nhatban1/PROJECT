@@ -52,9 +52,6 @@ exports.registerCourse = async (req, res, next) => {
 
     const semester = await Semester.findById(semesterId);
     if (!semester) return res.status(404).json({ success: false, message: 'Học kỳ không tồn tại' });
-    if (semester.startDate && new Date(semester.startDate).getTime() <= Date.now()) {
-      return res.status(400).json({ success: false, message: 'Môn học đã bắt đầu, không thể đăng ký' });
-    }
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ success: false, message: 'Môn học không tồn tại' });
     if (course.deletedAt) return res.status(404).json({ success: false, message: 'Môn học không tồn tại' });
@@ -112,9 +109,6 @@ exports.adminRegisterCourse = async (req, res, next) => {
     const resolvedSemesterId = semesterId || course.semesterId;
     const semester = await Semester.findById(resolvedSemesterId);
     if (!semester) return res.status(404).json({ success: false, message: 'Học kỳ không tồn tại' });
-    if (semester.startDate && new Date(semester.startDate).getTime() <= Date.now()) {
-      return res.status(400).json({ success: false, message: 'Môn học đã bắt đầu, không thể đăng ký' });
-    }
 
     if (String(course.semesterId) !== String(resolvedSemesterId)) {
       return res.status(400).json({ success: false, message: 'Môn học không thuộc học kỳ đã chọn' });

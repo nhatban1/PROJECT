@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const User = require("../models/User");
+const Student = require("../models/Student");
 const Teacher = require("../models/Teacher");
 const Semester = require("../models/Semester");
 const Course = require("../models/Course");
@@ -42,6 +43,7 @@ function generateRandomPhone(usedPhones) {
 const seed = async () => {
   await Promise.all([
     User.deleteMany(),
+    Student.deleteMany(),
     Teacher.deleteMany(),
     Semester.deleteMany(),
     Course.deleteMany(),
@@ -63,7 +65,6 @@ const seed = async () => {
     userId: "AD001",
     email: "admin@iuh.edu.vn",
     password: "AD001",
-    fullName: "Admin System",
     role: "admin"
   });
 
@@ -89,36 +90,43 @@ const seed = async () => {
       userId: teacherCode,
       email,
       password: teacherCode,
-      fullName: teacher.fullName,
-      phone: generateRandomPhone(usedTeacherPhones),
-      department: teacher.department,
       role: "teacher"
     });
 
     teacherIndex += 1;
   }
 
-  const studentUserSeeds = Array.from({ length: 12 }, (_, index) => {
+  const studentProfileSeeds = Array.from({ length: 12 }, (_, index) => {
     const studentNumber = index + 1;
     const studentCode = `SV${pad(studentNumber)}`;
-    const email = buildEmail(studentCode);
 
     return {
       _id: studentCode,
-      userId: studentCode,
-      email,
-      password: studentCode,
       fullName: `Sinh viên ${pad(studentNumber)}`,
       phone: generateRandomPhone(usedStudentPhones),
       department: studentDepartment,
-      role: "student",
       academicYear: "2025-2026"
     };
   });
 
   const teachers = await Teacher.insertMany(teacherSeeds);
   const teacherUsers = await User.create(teacherUserSeeds);
-  const students = await User.create(studentUserSeeds);
+  const students = await Student.insertMany(studentProfileSeeds);
+  const studentUsers = await User.create(
+    Array.from({ length: 12 }, (_, index) => {
+      const studentNumber = index + 1;
+      const studentCode = `SV${pad(studentNumber)}`;
+      const email = buildEmail(studentCode);
+
+      return {
+        _id: studentCode,
+        userId: studentCode,
+        email,
+        password: studentCode,
+        role: "student"
+      };
+    })
+  );
 
   const teacherById = teachers.reduce((accumulator, teacher) => {
     accumulator[teacher.teacherId] = teacher;
@@ -181,6 +189,8 @@ const seed = async () => {
       description: "Tổng quan về quy trình phát triển và quản lý phần mềm.",
       credits: 3,
       price: 1200000,
+      openedAt: daysAgo(20),
+      qualifiedAt: daysAgo(18),
       fullAt: daysAgo(10),
       teacherId: teacherById.GV001._id,
       semesterId: semesters[0]._id,
@@ -199,6 +209,7 @@ const seed = async () => {
       price: 1200000,
       theoryCredits: 2,
       practiceCredits: 1,
+      openedAt: daysAgo(12),
       teacherId: teacherById.GV002._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 3, startPeriod: 1, endPeriod: 3, room: "B201" },
@@ -216,6 +227,7 @@ const seed = async () => {
       price: 1200000,
       theoryCredits: 2,
       practiceCredits: 1,
+      openedAt: daysAgo(11),
       teacherId: teacherById.GV003._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 4, startPeriod: 2, endPeriod: 4, room: "C301" },
@@ -231,6 +243,7 @@ const seed = async () => {
       description: "Thiết kế, truy vấn và vận hành hệ quản trị cơ sở dữ liệu.",
       credits: 3,
       price: 1200000,
+      openedAt: daysAgo(8),
       teacherId: teacherById.GV004._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 5, startPeriod: 1, endPeriod: 3, room: "D401" },
@@ -246,6 +259,7 @@ const seed = async () => {
       description: "Cách thu thập, xử lý và phân tích dữ liệu ở mức nhập môn.",
       credits: 3,
       price: 1200000,
+      openedAt: daysAgo(7),
       teacherId: teacherById.GV005._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 6, startPeriod: 1, endPeriod: 3, room: "E501" },
@@ -263,6 +277,7 @@ const seed = async () => {
       price: 1200000,
       theoryCredits: 2,
       practiceCredits: 1,
+      openedAt: daysAgo(6),
       teacherId: teacherById.GV006._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 2, startPeriod: 4, endPeriod: 6, room: "C302" },
@@ -278,6 +293,7 @@ const seed = async () => {
       description: "Thiết kế, truy vấn và quản trị cơ sở dữ liệu quan hệ.",
       credits: 3,
       price: 1200000,
+      openedAt: daysAgo(5),
       teacherId: teacherById.GV007._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 3, startPeriod: 4, endPeriod: 6, room: "C303" },
@@ -295,6 +311,7 @@ const seed = async () => {
       price: 1200000,
       theoryCredits: 2,
       practiceCredits: 1,
+      openedAt: daysAgo(4),
       teacherId: teacherById.GV008._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 4, startPeriod: 4, endPeriod: 6, room: "C304" },
@@ -310,6 +327,7 @@ const seed = async () => {
       description: "Các nguyên tắc cơ bản về an toàn, bảo mật và phòng vệ hệ thống.",
       credits: 3,
       price: 1200000,
+      openedAt: daysAgo(3),
       teacherId: teacherById.GV009._id,
       semesterId: semesters[0]._id,
       schedule: { dayOfWeek: 5, startPeriod: 1, endPeriod: 3, room: "C305" },
@@ -438,7 +456,7 @@ const seed = async () => {
   });
 
   console.log(
-    `Seed data đã được tạo: 1 admin, ${teacherUsers.length} giảng viên, ${students.length} sinh viên, 10 môn học mẫu.`
+    `Seed data đã được tạo: 1 admin, ${teacherUsers.length} tài khoản giảng viên, ${studentUsers.length} tài khoản sinh viên, ${students.length} hồ sơ sinh viên, 10 môn học mẫu.`
   );
 };
 

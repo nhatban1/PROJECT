@@ -70,10 +70,27 @@ function applyCourseStatus(course, nextStatus, now = new Date()) {
   return course.status;
 }
 
+function syncCourseQualification(course, minimumStudents, now = new Date()) {
+  if (!course || typeof minimumStudents !== 'number' || Number.isNaN(minimumStudents) || minimumStudents < 1) {
+    return course?.qualifiedAt;
+  }
+
+  if (course.currentStudents >= minimumStudents) {
+    if (!course.qualifiedAt) {
+      course.qualifiedAt = now;
+    }
+  } else {
+    course.qualifiedAt = undefined;
+  }
+
+  return course.qualifiedAt;
+}
+
 module.exports = {
   THEORY_PRICE_PER_CREDIT,
   PRACTICE_PRICE_PER_CREDIT,
   calculateCoursePrice,
   resolveCourseStatus,
   applyCourseStatus,
+  syncCourseQualification,
 };

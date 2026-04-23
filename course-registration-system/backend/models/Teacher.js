@@ -6,7 +6,8 @@ const teacherSchema = new mongoose.Schema(
     _id: { type: String, trim: true },
     teacherId: { type: String, required: true, unique: true, trim: true },
     fullName: { type: String, required: true, trim: true },
-    department: { type: String, trim: true }
+    department: { type: String, trim: true },
+    phone: String,
   },
   { timestamps: true }
 );

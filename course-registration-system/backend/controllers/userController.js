@@ -44,17 +44,13 @@ exports.updateUser = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const { password, role, email, fullName, phone, department, academicYear, isActive } = req.body;
+    const { password, role, email, isActive } = req.body;
 
     if (role && role !== user.role) {
       return res.status(400).json({ success: false, message: 'Không thể thay đổi vai trò của tài khoản hiện có' });
     }
 
     if (email !== undefined) user.email = String(email).trim().toLowerCase();
-    if (fullName !== undefined) user.fullName = fullName;
-    if (phone !== undefined) user.phone = phone;
-    if (department !== undefined) user.department = department;
-    if (academicYear !== undefined) user.academicYear = academicYear;
     if (isActive !== undefined) user.isActive = isActive;
     if (password) user.password = password;
 

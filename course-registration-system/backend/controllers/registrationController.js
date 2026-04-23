@@ -1,8 +1,10 @@
 const Registration = require('../models/Registration');
 const Course = require('../models/Course');
 const Semester = require('../models/Semester');
-const User = require('../models/User');
-const { applyCourseStatus, resolveCourseStatus } = require('../utils/courseState');
+const Student = require('../models/Student');
+const { applyCourseStatus, resolveCourseStatus, syncCourseQualification } = require('../utils/courseState');
+const { getCourseLifecycleConfig } = require('../utils/courseLifecycleConfig');
+const { hydrateProfilesWithAccounts } = require('../utils/profileHydration');
 
 const MAX_SEMESTER_CREDITS = 20;
 
@@ -41,6 +43,24 @@ function syncCourseStatusFromCapacity(course) {
   applyCourseStatus(course, resolveCourseStatus(course));
 }
 
+async function syncCourseLifecycleFields(course, now = new Date()) {
+  const { lowEnrollmentMinStudents } = await getCourseLifecycleConfig();
+  syncCourseQualification(course, lowEnrollmentMinStudents, now);
+  syncCourseStatusFromCapacity(course);
+}
+
+async function mergeStudentRegistrations(registrations) {
+  const registrationList = registrations.map((registration) => (registration.toObject ? registration.toObject() : registration));
+  const studentProfiles = registrationList.map((registration) => registration.studentId).filter(Boolean);
+  const mergedStudents = await hydrateProfilesWithAccounts(studentProfiles, 'student');
+  const mergedMap = new Map(mergedStudents.map((student) => [student._id, student]));
+
+  return registrationList.map((registration) => ({
+    ...registration,
+    studentId: mergedMap.get(registration.studentId?._id ?? registration.studentId) ?? registration.studentId,
+  }));
+}
+
 exports.registerCourse = async (req, res, next) => {
   try {
     const studentId = req.user._id;
@@ -52,6 +72,8 @@ exports.registerCourse = async (req, res, next) => {
 
     const semester = await Semester.findById(semesterId);
     if (!semester) return res.status(404).json({ success: false, message: 'Học kỳ không tồn tại' });
+    const student = await Student.findById(studentId);
+    if (!student) return res.status(404).json({ success: false, message: 'Không tìm thấy sinh viên' });
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ success: false, message: 'Môn học không tồn tại' });
     if (course.deletedAt) return res.status(404).json({ success: false, message: 'Môn học không tồn tại' });
@@ -80,7 +102,7 @@ exports.registerCourse = async (req, res, next) => {
     }
 
     course.currentStudents += 1;
-    syncCourseStatusFromCapacity(course);
+    await syncCourseLifecycleFields(course);
     await course.save();
     res.status(existed ? 200 : 201).json({ success: true, data: registration });
   } catch (err) { next(err); }
@@ -94,8 +116,8 @@ exports.adminRegisterCourse = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin sinh viên hoặc môn học' });
     }
 
-    const student = await User.findById(studentId);
-    if (!student || student.role !== 'student') {
+    const student = await Student.findById(studentId);
+    if (!student) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy sinh viên' });
     }
 
@@ -136,7 +158,7 @@ exports.adminRegisterCourse = async (req, res, next) => {
     }
 
     course.currentStudents += 1;
-    syncCourseStatusFromCapacity(course);
+    await syncCourseLifecycleFields(course);
     await course.save();
 
     res.status(existed ? 200 : 201).json({ success: true, data: registration });
@@ -166,7 +188,7 @@ exports.adminRemoveRegistration = async (req, res, next) => {
       course.currentStudents -= 1;
     }
 
-    syncCourseStatusFromCapacity(course);
+    await syncCourseLifecycleFields(course);
     await course.save();
 
     res.json({ success: true, data: registration });
@@ -187,7 +209,7 @@ exports.cancelRegistration = async (req, res, next) => {
     const course = await Course.findById(registration.courseId);
     if (course && course.currentStudents > 0) {
       course.currentStudents -= 1;
-      syncCourseStatusFromCapacity(course);
+      await syncCourseLifecycleFields(course);
       await course.save();
     }
     res.json({ success: true, data: registration });
@@ -198,11 +220,11 @@ exports.getMyRegistrations = async (req, res, next) => {
   try {
     const studentId = req.user._id;
     const regs = await Registration.find({ studentId })
-      .populate('studentId', 'userId fullName email phone department academicYear role')
+      .populate('studentId', 'studentId fullName phone department academicYear')
       .populate('courseId', 'courseId name credits department teacherId semesterId schedule maxStudents currentStudents status price')
       .populate('semesterId', 'semesterId name status')
       .sort({ createdAt: -1 });
-    res.json({ success: true, data: regs });
+    res.json({ success: true, data: await mergeStudentRegistrations(regs) });
   } catch (err) { next(err); }
 };
 
@@ -221,17 +243,19 @@ exports.getCourseRegistrations = async (req, res, next) => {
       .populate('semesterId', 'semesterId name status');
 
     const regs = await Registration.find({ courseId, status: 'registered' })
-      .populate('studentId', 'userId fullName email phone department academicYear role')
+      .populate('studentId', 'studentId fullName phone department academicYear')
       .populate('courseId', 'courseId name credits department teacherId semesterId schedule maxStudents currentStudents status price')
       .populate('semesterId', 'semesterId name status')
       .sort({ createdAt: 1 });
+
+    const mergedRegistrations = await mergeStudentRegistrations(regs);
 
     res.json({
       success: true,
       data: {
         course: populatedCourse,
-        registrations: regs,
-        total: regs.length,
+        registrations: mergedRegistrations,
+        total: mergedRegistrations.length,
       },
     });
   } catch (err) { next(err); }
@@ -242,12 +266,12 @@ exports.getRegistrations = async (req, res, next) => {
     const { page = 1, limit = 50 } = req.query;
     const skip = (page - 1) * limit;
     const regs = await Registration.find()
-      .populate('studentId', 'userId fullName email phone department academicYear role')
+      .populate('studentId', 'studentId fullName phone department academicYear')
       .populate('courseId', 'courseId name credits department teacherId semesterId schedule maxStudents currentStudents status price')
       .populate('semesterId', 'semesterId name status')
       .skip(skip)
       .limit(Number(limit));
     const total = await Registration.countDocuments();
-    res.json({ success: true, data: regs, total, page: Number(page), limit: Number(limit) });
+    res.json({ success: true, data: await mergeStudentRegistrations(regs), total, page: Number(page), limit: Number(limit) });
   } catch (err) { next(err); }
 };

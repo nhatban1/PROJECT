@@ -113,11 +113,12 @@ Sau khi nạp dữ liệu mẫu, có thể dùng các tài khoản sau. / After 
 ## Cách test website / How to test
 
 1. Chạy seed lại cơ sở dữ liệu bằng `cd backend && node seed/seedData.js`. / Reseed the database with `cd backend && node seed/seedData.js`.
-2. Mở backend bằng `cd backend && npm run dev`. / Start the backend with `cd backend && npm run dev`.
-3. Mở frontend bằng `cd frontend && npm run dev` hoặc `bun run dev` nếu môi trường Bun đã sẵn sàng. / Start the frontend with `cd frontend && npm run dev` or `bun run dev` if Bun is available.
-4. Đăng nhập sinh viên bằng `sv001@iuh.edu.vn` / `SV001`, mở trang `Đăng ký học phần`, chọn một môn đang mở trong học kỳ hiện tại và bấm `Đăng ký`. Sau đó kiểm tra mục `Môn đã đăng ký` và `Khóa học` để thấy số sĩ số thay đổi.
-5. Đăng nhập giảng viên bằng `gv001@iuh.edu.vn` / `GV001`, mở trang `Đăng ký học phần`, chọn lớp của mình trong phần `Xem sinh viên theo lớp` để xem số lượng sinh viên và danh sách sinh viên đã đăng ký. Các thao tác thêm/sửa/xóa vẫn thuộc admin.
-6. Đăng nhập admin bằng `Admin@iuh.edu.vn` / `AD001`, kiểm tra `Dashboard`, `Students`, `Teachers`, `Courses`, `Đăng ký học phần` và `Reports`. Admin có thể xem toàn bộ danh sách đăng ký và lịch sử.
+2. Nếu bạn đã có dữ liệu cũ, chạy thêm migration `cd backend && bun run migrate:profiles` để tách `users` thành account-only và đẩy dữ liệu sinh viên/giảng viên sang collection riêng. / If you already have old data, run `cd backend && bun run migrate:profiles` to split `users` into account-only data and move student/teacher profiles into separate collections.
+3. Mở backend bằng `cd backend && npm run dev`. / Start the backend with `cd backend && npm run dev`.
+4. Mở frontend bằng `cd frontend && npm run dev` hoặc `bun run dev` nếu môi trường Bun đã sẵn sàng. / Start the frontend with `cd frontend && npm run dev` or `bun run dev` if Bun is available.
+5. Đăng nhập sinh viên bằng `sv001@iuh.edu.vn` / `SV001`, mở trang `Đăng ký học phần`, chọn một môn đang mở trong học kỳ hiện tại và bấm `Đăng ký`. Sau đó kiểm tra mục `Môn đã đăng ký` và `Khóa học` để thấy số sĩ số thay đổi.
+6. Đăng nhập giảng viên bằng `gv001@iuh.edu.vn` / `GV001`, mở trang `Đăng ký học phần`, chọn lớp của mình trong phần `Xem sinh viên theo lớp` để xem số lượng sinh viên và danh sách sinh viên đã đăng ký. Các thao tác thêm/sửa/xóa vẫn thuộc admin.
+7. Đăng nhập admin bằng `Admin@iuh.edu.vn` / `AD001`, kiểm tra `Dashboard`, `Students`, `Teachers`, `Courses`, `Đăng ký học phần` và `Reports`. Admin có thể xem toàn bộ danh sách đăng ký và lịch sử.
 
 ## Seed dữ liệu mẫu / Seed Data
 
@@ -125,7 +126,7 @@ File seed nằm ở [backend/seed/seedData.js](backend/seed/seedData.js). Script
 
 The seed file is located at [backend/seed/seedData.js](backend/seed/seedData.js). It deletes existing data before recreating demo records, so only run it when you are okay with resetting the database.
 
-Sau khi seed, các collection chính dùng mã chuỗi theo thứ tự như `AD001`, `GV001`, `SV001`, `HK001`, `MH001`, `DK001`, `TB001` thay cho `ObjectId` mặc định. / After seeding, the main collections use ordered string IDs such as `AD001`, `GV001`, `SV001`, `HK001`, `MH001`, `DK001`, `TB001` instead of the default `ObjectId` values.
+Sau khi seed, các collection chính dùng mã chuỗi theo thứ tự như `AD001`, `GV001`, `SV001`, `HK001`, `MH001`, `DK001`, `TB001` thay cho `ObjectId` mặc định. `users` giờ chỉ chứa account, còn hồ sơ sinh viên nằm ở `students` và hồ sơ giảng viên nằm ở `teachers`. / After seeding, the main collections use ordered string IDs such as `AD001`, `GV001`, `SV001`, `HK001`, `MH001`, `DK001`, `TB001` instead of the default `ObjectId` values. `users` now stores accounts only, while student profiles live in `students` and teacher profiles live in `teachers`.
 
 Chạy thủ công / Run manually:
 
@@ -133,6 +134,19 @@ Chạy thủ công / Run manually:
 cd backend
 node seed/seedData.js
 ```
+
+## Cập nhật dữ liệu hiện có / Update Existing Data
+
+Nếu bạn đã có MongoDB đang chạy và chỉ muốn backfill các trường thời gian mới cho lớp học mà không xóa dữ liệu cũ, dùng migration sau. Script này sẽ bổ sung `openedAt`, `qualifiedAt` và `fullAt` cho các course đang tồn tại khi cần thiết.
+
+If you already have MongoDB data and only want to backfill the new lifecycle timestamps without resetting the database, run the migration below. It fills `openedAt`, `qualifiedAt`, and `fullAt` for existing courses when needed.
+
+```bash
+cd backend
+npm run migrate:data
+```
+
+Ghi chú / Note: Script dùng `backend/.env` nếu có, nên hãy đảm bảo `MONGODB_URI` trỏ đúng database bạn muốn cập nhật. / The script reads `backend/.env` if present, so make sure `MONGODB_URI` points to the database you want to update.
 
 ## API backend / Backend API
 
@@ -151,6 +165,14 @@ Tất cả API đều có tiền tố `/api`. / All endpoints are prefixed with 
 - `POST /api/users`
 - `PUT /api/users/:id`
 - `DELETE /api/users/:id`
+
+### Students / Sinh viên
+
+- `GET /api/students`
+- `GET /api/students/:id`
+- `POST /api/students`
+- `PUT /api/students/:id`
+- `DELETE /api/students/:id`
 
 ### Teachers / Giảng viên
 

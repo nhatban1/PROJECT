@@ -1,12 +1,14 @@
 const Teacher = require("../models/Teacher");
 const User = require("../models/User");
+const { hydrateProfilesWithAccounts } = require("../utils/profileHydration");
 
 exports.getTeachers = async (req, res, next) => {
   try {
     const { page, limit, skip } = req.pagination;
     const teachers = await Teacher.find().skip(skip).limit(limit);
     const total = await Teacher.countDocuments();
-    res.json({ success: true, data: teachers, total, page, limit });
+    const mergedTeachers = await hydrateProfilesWithAccounts(teachers, 'teacher');
+    res.json({ success: true, data: mergedTeachers, total, page, limit });
   } catch (error) {
     next(error);
   }
@@ -25,15 +27,12 @@ exports.getTeacher = async (req, res, next) => {
 exports.createTeacher = async (req, res, next) => {
   try {
     const { email, password, fullName, department, phone, isActive = true } = req.body;
-    const teacher = await Teacher.create({ fullName, department });
+    const teacher = await Teacher.create({ fullName: fullName || 'Giảng viên', department, phone });
     const user = await User.create({
       _id: teacher._id,
       userId: teacher.teacherId,
       email: String(email || `${teacher.teacherId.toLowerCase()}@iuh.edu.vn`).trim().toLowerCase(),
       password: password || teacher.teacherId,
-      fullName: fullName || teacher.fullName,
-      department,
-      phone,
       role: "teacher",
       isActive,
     });
@@ -57,12 +56,14 @@ exports.updateTeacher = async (req, res, next) => {
 
     if (fullName !== undefined) {
       teacher.fullName = fullName;
-      user.fullName = fullName;
     }
 
     if (department !== undefined) {
       teacher.department = department;
-      user.department = department;
+    }
+
+    if (phone !== undefined) {
+      teacher.phone = phone;
     }
 
     if (email !== undefined) {
@@ -70,7 +71,7 @@ exports.updateTeacher = async (req, res, next) => {
     }
 
     if (phone !== undefined) {
-      user.phone = phone;
+      // phone is stored on the teacher profile only
     }
 
     if (isActive !== undefined) {
@@ -95,6 +96,7 @@ exports.deleteTeacher = async (req, res, next) => {
   try {
     const teacher = await Teacher.findByIdAndDelete(req.params.id);
     if (!teacher) return res.status(404).json({ success: false, message: "Không tìm thấy giảng viên" });
+    await User.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Đã xóa giảng viên" });
   } catch (error) {
     next(error);

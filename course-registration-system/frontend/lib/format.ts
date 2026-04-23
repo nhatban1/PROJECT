@@ -94,12 +94,15 @@ type CourseStatusSource = {
 
   type CourseLifecycleSource = {
     fullToCloseDays?: number | null;
+    fullToCloseMinutes?: number | null;
     lowEnrollmentMinStudents?: number | null;
     lowEnrollmentCancelDays?: number | null;
+    lowEnrollmentCancelMinutes?: number | null;
   };
 
   type CourseLifecycleTimingSource = CourseStatusSource & {
     openedAt?: string | Date | null;
+      qualifiedAt?: string | Date | null;
     fullAt?: string | Date | null;
     createdAt?: string | Date | null;
   };
@@ -113,6 +116,38 @@ type CourseStatusSource = {
 
     const date = value instanceof Date ? value : new Date(value);
     return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function getDurationMs(days?: number | null, minutes?: number | null) {
+    if (typeof minutes === "number" && Number.isFinite(minutes)) {
+      return Math.max(minutes, 0) * 60 * 1000;
+    }
+
+    if (typeof days === "number" && Number.isFinite(days)) {
+      return Math.max(days, 0) * MS_PER_DAY;
+    }
+
+    return null;
+  }
+
+  function formatDurationLabel(days?: number | null, minutes?: number | null) {
+    if (typeof minutes === "number" && Number.isFinite(minutes)) {
+      return `${formatNumber(minutes)} phút`;
+    }
+
+    if (typeof days === "number" && Number.isFinite(days)) {
+      return `${formatNumber(days)} ngày`;
+    }
+
+    return "-";
+  }
+
+  function formatRemainingDuration(remainingMs: number, useMinutes: boolean) {
+    if (useMinutes) {
+      return `${formatNumber(Math.max(Math.ceil(remainingMs / 60000), 0))} phút`;
+    }
+
+    return `${formatNumber(Math.max(Math.ceil(remainingMs / MS_PER_DAY), 0))} ngày`;
   }
 
 export function resolveCourseDisplayStatus(course?: CourseStatusSource) {
@@ -151,36 +186,53 @@ export function resolveCourseLifecycleCountdown(course?: CourseLifecycleTimingSo
   const isFull = normalizedStatus === "full" || (currentStudents !== null && maxStudents !== null && currentStudents >= maxStudents);
 
   if (isFull) {
-    const fullToCloseDays = typeof lifecycle.fullToCloseDays === "number" ? lifecycle.fullToCloseDays : null;
-    if (fullToCloseDays === null) {
+    const fullDurationMs = getDurationMs(lifecycle.fullToCloseDays, lifecycle.fullToCloseMinutes);
+    if (fullDurationMs === null) {
       return "-";
     }
 
     const fullAt = toDate(course.fullAt ?? course.createdAt ?? null);
     if (!fullAt) {
-      return `Khóa sau ${formatNumber(fullToCloseDays)} ngày`;
+      return `Khóa sau ${formatDurationLabel(lifecycle.fullToCloseDays, lifecycle.fullToCloseMinutes)}`;
     }
 
-    const remainingDays = Math.max(Math.ceil((fullAt.getTime() + fullToCloseDays * MS_PER_DAY - referenceDate.getTime()) / MS_PER_DAY), 0);
-    return `Khóa sau ${formatNumber(remainingDays)} ngày`;
+    const remainingMs = Math.max(fullAt.getTime() + fullDurationMs - referenceDate.getTime(), 0);
+    return `Khóa sau ${formatRemainingDuration(remainingMs, typeof lifecycle.fullToCloseMinutes === "number")}`;
   }
 
   const lowEnrollmentMinStudents = typeof lifecycle.lowEnrollmentMinStudents === "number" ? lifecycle.lowEnrollmentMinStudents : null;
-  const lowEnrollmentCancelDays = typeof lifecycle.lowEnrollmentCancelDays === "number" ? lifecycle.lowEnrollmentCancelDays : null;
+  const lowEnrollmentCancelDurationMs = getDurationMs(lifecycle.lowEnrollmentCancelDays, lifecycle.lowEnrollmentCancelMinutes);
 
   if (
     lowEnrollmentMinStudents !== null &&
-    lowEnrollmentCancelDays !== null &&
+    lowEnrollmentCancelDurationMs !== null &&
     currentStudents !== null &&
     currentStudents < lowEnrollmentMinStudents
   ) {
     const openedAt = toDate(course.openedAt ?? course.createdAt ?? null);
     if (!openedAt) {
-      return `Hủy sau ${formatNumber(lowEnrollmentCancelDays)} ngày`;
+      return `Hủy sau ${formatDurationLabel(lifecycle.lowEnrollmentCancelDays, lifecycle.lowEnrollmentCancelMinutes)}`;
     }
 
-    const remainingDays = Math.max(Math.ceil((openedAt.getTime() + lowEnrollmentCancelDays * MS_PER_DAY - referenceDate.getTime()) / MS_PER_DAY), 0);
-    return `Hủy sau ${formatNumber(remainingDays)} ngày`;
+    const remainingMs = Math.max(openedAt.getTime() + lowEnrollmentCancelDurationMs - referenceDate.getTime(), 0);
+    return `Hủy sau ${formatRemainingDuration(remainingMs, typeof lifecycle.lowEnrollmentCancelMinutes === "number")}`;
+  }
+
+  if (
+    lowEnrollmentMinStudents !== null &&
+    lowEnrollmentCancelDurationMs !== null &&
+    currentStudents !== null &&
+    maxStudents !== null &&
+    currentStudents >= lowEnrollmentMinStudents &&
+    currentStudents < maxStudents
+  ) {
+    const qualifiedAt = toDate(course.qualifiedAt ?? course.openedAt ?? course.createdAt ?? null);
+    if (!qualifiedAt) {
+      return `Khóa sau ${formatDurationLabel(lifecycle.lowEnrollmentCancelDays, lifecycle.lowEnrollmentCancelMinutes)}`;
+    }
+
+    const remainingMs = Math.max(qualifiedAt.getTime() + lowEnrollmentCancelDurationMs - referenceDate.getTime(), 0);
+    return `Khóa sau ${formatRemainingDuration(remainingMs, typeof lifecycle.lowEnrollmentCancelMinutes === "number")}`;
   }
 
   return "-";

@@ -4,7 +4,7 @@ const { generateSequentialId } = require("../utils/sequentialId");
 const registrationSchema = new mongoose.Schema(
   {
     _id: { type: String, trim: true },
-    studentId: { type: String, ref: "User", required: true },
+    studentId: { type: String, ref: "Student", required: true },
     courseId: { type: String, ref: "Course", required: true },
     semesterId: { type: String, ref: "Semester", required: true },
     status: { type: String, enum: ["registered", "cancelled"], default: "registered" },

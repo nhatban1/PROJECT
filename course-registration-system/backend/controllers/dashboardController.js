@@ -1,6 +1,8 @@
 const Course = require('../models/Course');
 const Registration = require('../models/Registration');
 const User = require('../models/User');
+const Student = require('../models/Student');
+const Teacher = require('../models/Teacher');
 const Semester = require('../models/Semester');
 
 exports.stats = async (req, res, next) => {
@@ -58,8 +60,8 @@ exports.stats = async (req, res, next) => {
     }
 
     const [studentCount, teacherCount, courseCount, registrationCount] = await Promise.all([
-      User.countDocuments({ role: 'student' }),
-      User.countDocuments({ role: 'teacher' }),
+      Student.countDocuments(),
+      Teacher.countDocuments(),
       Course.countDocuments(),
       Registration.countDocuments({ status: 'registered' }),
     ]);

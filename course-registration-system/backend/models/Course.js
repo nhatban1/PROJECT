@@ -24,6 +24,7 @@ const courseSchema = new mongoose.Schema(
     maxStudents: { type: Number, default: 10 },
     currentStudents: { type: Number, default: 0 },
     openedAt: Date,
+    qualifiedAt: Date,
     fullAt: Date,
     cancelledAt: Date,
     cancelReason: { type: String, trim: true },

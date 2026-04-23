@@ -27,9 +27,12 @@ export interface DashboardStats {
 
 export interface CourseLifecycleSettings {
   plannedToOpenDays: number;
+  plannedToOpenMinutes?: number;
   fullToCloseDays: number;
+  fullToCloseMinutes?: number;
   lowEnrollmentMinStudents: number;
   lowEnrollmentCancelDays: number;
+  lowEnrollmentCancelMinutes?: number;
 }
 
 export interface AdminDashboardData {
@@ -152,6 +155,7 @@ export interface CourseRecord {
   currentStudents: number;
   status: "open" | "planned" | "ongoing" | "closed" | "full";
   openedAt?: string;
+  qualifiedAt?: string;
   fullAt?: string;
   cancelledAt?: string;
   cancelReason?: string;

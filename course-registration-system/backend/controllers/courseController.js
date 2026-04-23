@@ -3,7 +3,7 @@ const Teacher = require('../models/Teacher');
 const Semester = require('../models/Semester');
 const Registration = require('../models/Registration');
 const { getCourseLifecycleConfig } = require('../utils/courseLifecycleConfig');
-const { applyCourseStatus, resolveCourseStatus } = require('../utils/courseState');
+const { applyCourseStatus, resolveCourseStatus, syncCourseQualification } = require('../utils/courseState');
 
 exports.getCourses = async (req, res, next) => {
   try {
@@ -78,6 +78,8 @@ exports.updateCourse = async (req, res, next) => {
     if (maxStudents !== undefined) course.maxStudents = Number(maxStudents);
 
     applyCourseStatus(course, resolveCourseStatus(course, status));
+    const { lowEnrollmentMinStudents } = await getCourseLifecycleConfig();
+    syncCourseQualification(course, lowEnrollmentMinStudents);
     await course.save();
     res.json({ success: true, data: course });
   } catch (err) { next(err); }
@@ -101,6 +103,7 @@ exports.deleteCourse = async (req, res, next) => {
     );
 
     course.currentStudents = 0;
+    course.qualifiedAt = undefined;
     applyCourseStatus(course, 'closed', now);
     course.cancelledAt = now;
     course.cancelReason = 'Lớp học đã bị xóa bởi quản trị viên';

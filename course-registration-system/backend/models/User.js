@@ -6,12 +6,8 @@ const userSchema = new mongoose.Schema(
   { 
     _id: { type: String, trim: true },
     userId: { type: String, trim: true },
-    fullName: { type: String, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
-    phone: String,
-    department: String,
-    academicYear: String,
     role: { type: String, enum: ['student','admin','teacher'], default: 'student' },
     isActive: { type: Boolean, default: true }
   },

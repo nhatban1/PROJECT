@@ -214,7 +214,7 @@ export default function RegistrationPage() {
     try {
       const studentRequest =
         role === "admin"
-          ? apiFetch<StudentRecord[]>("/users?page=1&limit=500&role=student")
+          ? apiFetch<StudentRecord[]>("/students?page=1&limit=500")
           : Promise.resolve<ApiResponse<StudentRecord[]> | null>(null);
 
       const registrationRequest =
@@ -389,7 +389,7 @@ export default function RegistrationPage() {
     return () => {
       cancelled = true;
     };
-  }, [role, router, selectedCourseId]);
+  }, [allRegistrations, courses, role, router, selectedCourseId]);
 
   const studentRegisteredCount = myRegistrations.filter((registration) => registration.status === "registered").length;
   const studentCancelledCount = myRegistrations.filter((registration) => registration.status === "cancelled").length;
@@ -1375,21 +1375,40 @@ export default function RegistrationPage() {
               </div>
 
               {selectedRoster?.course ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Tổng sinh viên</p>
-                    <p className="mt-1 font-semibold">{formatNumber(selectedRoster.total)}</p>
-                    <p className="text-xs text-muted-foreground">{formatNumber(selectedRoster.course.currentStudents)} đã ghi trong khóa học</p>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Tổng sinh viên</p>
+                      <p className="mt-1 font-semibold">{formatNumber(selectedRoster.total)}</p>
+                      <p className="text-xs text-muted-foreground">{formatNumber(selectedRoster.course.currentStudents)} đã ghi trong khóa học</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleExportRosterPdf}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <Download className="h-4 w-4" />
+                      Xuất danh sách
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleExportRosterPdf}
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    <Download className="h-4 w-4" />
-                    Xuất danh sách
-                  </button>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="rounded-2xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Mở lớp</p>
+                      <p className="mt-1 font-semibold">{formatDateTime(selectedRoster.course.openedAt)}</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Đủ điều kiện khóa</p>
+                      <p className="mt-1 font-semibold">{formatDateTime(selectedRoster.course.qualifiedAt)}</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Đã đầy từ</p>
+                      <p className="mt-1 font-semibold">{formatDateTime(selectedRoster.course.fullAt)}</p>
+                    </div>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -1446,6 +1465,29 @@ export default function RegistrationPage() {
                     header: "Ngày đăng ký",
                     render: (registration) => formatDateTime(registration.createdAt),
                   },
+                  ...(role === "admin"
+                    ? [
+                        {
+                          header: "Hành động",
+                          render: (registration: RegistrationRecord) => (
+                            <button
+                              type="button"
+                              onClick={() => void handleAdminRemove(registration)}
+                              disabled={busyRegistrationId === registration._id}
+                              className={cn(
+                                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition",
+                                busyRegistrationId === registration._id
+                                  ? "cursor-not-allowed bg-muted text-muted-foreground"
+                                  : "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                              )}
+                            >
+                              {busyRegistrationId === registration._id ? <RotateCcw className="h-3.5 w-3.5 animate-spin" /> : null}
+                              Xóa khỏi lớp
+                            </button>
+                          ),
+                        },
+                      ]
+                    : []),
                 ]}
               />
             </div>

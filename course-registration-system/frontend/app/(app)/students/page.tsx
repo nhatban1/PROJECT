@@ -30,7 +30,7 @@ export default function StudentsPage() {
     setError("");
 
     try {
-      const response = await apiFetch<StudentRecord[]>("/users?page=1&limit=500&role=student");
+      const response = await apiFetch<StudentRecord[]>("/students?page=1&limit=500");
       setStudents(ensureArray<StudentRecord>(response.data).filter((student) => (student.role ?? "student") === "student"));
     } catch (fetchError) {
       if (fetchError instanceof ApiError && fetchError.status === 401) {

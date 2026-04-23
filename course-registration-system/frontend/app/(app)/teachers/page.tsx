@@ -47,7 +47,7 @@ export default function TeachersPage() {
         return {
           ...teacher,
           email: account?.email,
-          phone: account?.phone,
+          phone: account?.phone || teacher.phone,
           userId: account?.userId,
           isActive: account?.isActive,
           fullName: account?.fullName || teacher.fullName,
